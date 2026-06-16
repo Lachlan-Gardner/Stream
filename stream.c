@@ -17,6 +17,8 @@
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
 
+struct river_layer_shell_v1 *layer_shell_v1;
+
 struct Output {
 	struct river_output_v1 *obj;
 	bool removed;
@@ -47,12 +49,10 @@ enum Action {
 	ACTION_SPAWN_TERMINAL,
 	ACTION_CLOSE,
 	ACTION_FOCUS_NEXT,
-	ACTION_MOVE,
 	ACTION_LAUNCH,
 	ACTION_POWER_MENU,
-	ACTION_FULLSCREEN,
-	ACTION_FILE_MANAGER,
 	ACTION_BROWSER,
+	ACTION_MOVE,
 	ACTION_RESIZE,
 	ACTION_EXIT,
 };
@@ -118,6 +118,8 @@ static void output_handle_removed(void *data, struct river_output_v1 *obj) {
 	struct Output *output = data;
 	output->removed = true;
 }
+
+{ "river-layer-shell-v1", (struct wl_proxy*)river_layer_shell, 1, 1 }
 
 // Ignored events
 static void output_handle_wl_output(void *data, struct river_output_v1 *obj, uint32_t name) {}
@@ -451,15 +453,11 @@ static void seat_action(struct Seat *seat, enum Action action) {
 		}
 		break;
 	case ACTION_LAUNCH:
-		if (fork() == 0) {
-			execlp("/bin/sh", "~/Scripts/AppLaunch", (char *)0);
+		if(fork() == 0) {
+			execl("/bin/zsh", "/bin/zsh", "-c", "~/Scripts/AppLaunch", NULL);
 		}
 		break;
 	case ACTION_BROWSER:
-		break;
-	case ACTION_FILE_MANAGER:
-		break;
-	case ACTION_FULLSCREEN:
 		break;
 	case ACTION_POWER_MENU:
 		break;
@@ -489,7 +487,10 @@ static void seat_manage(struct Seat *seat) {
 		xkb_binding_create(seat, super, XKB_KEY_w, ACTION_CLOSE);
 		xkb_binding_create(seat, alt, XKB_KEY_Tab, ACTION_FOCUS_NEXT);
 		xkb_binding_create(seat, super, XKB_KEY_Escape, ACTION_EXIT);
-		xkb_binding_create(seat, alt, XKB_KEY_R, ACTION_LAUNCH);  	
+		xkb_binding_create(seat, alt, XKB_KEY_r, ACTION_LAUNCH);
+		xkb_binding_create(seat, super, XKB_KEY_f, ACTION_BROWSER);
+		xkb_binding_create(seat, alt, XKB_KEY_p, ACTION_POWER_MENU);
+		xkb_binding_create(seat, alt, XKB_KEY_r, ACTION_LAUNCH);  	
 		pointer_binding_create(seat, super, BTN_LEFT, ACTION_MOVE);
 		pointer_binding_create(seat, alt, BTN_LEFT, ACTION_RESIZE);
 	}
@@ -629,6 +630,15 @@ static void wm_handle_output(
 	river_output_v1_add_listener(output->obj, &river_output_listener, output);
 
 	wl_list_insert(wm.outputs.prev, &output->link);
+
+	struct layer_shell_output *ls_output = calloc(1, sizeof(*ls_output));
+    ls_output->output = output;
+    ls_output->ls_output = river_layer_shell_v1_get_output(
+        state.layer_shell, output);
+
+    river_layer_shell_output_v1_add_listener(
+        ls_output->ls_output, &layer_shell_output_listener, ls_output);
+}
 }
 
 static void wm_handle_seat(
@@ -674,7 +684,11 @@ static void handle_global(void *data, struct wl_registry *registry, uint32_t nam
 		}
 	} else if (strcmp(interface, river_xkb_bindings_v1_interface.name) == 0) {
 		xkb_bindings_v1 = wl_registry_bind(registry, name, &river_xkb_bindings_v1_interface, 1);
-	}
+	} else if (strcmp(interface, river_layer_shell_v1_interface.name) == 0) {
+        // Bind to advertise layer shell support
+        state.layer_shell = wl_registry_bind(registry, name,
+                                              &river_layer_shell_v1_interface, 1);
+    }
 }
 
 static void handle_global_remove(void *data, struct wl_registry *registry, uint32_t name) {}
