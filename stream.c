@@ -48,6 +48,11 @@ enum Action {
 	ACTION_CLOSE,
 	ACTION_FOCUS_NEXT,
 	ACTION_MOVE,
+	ACTION_LAUNCH,
+	ACTION_POWER_MENU,
+	ACTION_FULLSCREEN,
+	ACTION_FILE_MANAGER,
+	ACTION_BROWSER,
 	ACTION_RESIZE,
 	ACTION_EXIT,
 };
@@ -445,6 +450,19 @@ static void seat_action(struct Seat *seat, enum Action action) {
 			seat_focus(seat, window);
 		}
 		break;
+	case ACTION_LAUNCH:
+		if (fork() == 0) {
+			execlp("/bin/sh", "~/Scripts/AppLaunch", (char *)0);
+		}
+		break;
+	case ACTION_BROWSER:
+		break;
+	case ACTION_FILE_MANAGER:
+		break;
+	case ACTION_FULLSCREEN:
+		break;
+	case ACTION_POWER_MENU:
+		break;
 	case ACTION_MOVE:
 		if (seat->op == SEAT_OP_NONE && seat->hovered != NULL) {
 			seat_pointer_move(seat, seat->hovered);
@@ -471,6 +489,7 @@ static void seat_manage(struct Seat *seat) {
 		xkb_binding_create(seat, super, XKB_KEY_w, ACTION_CLOSE);
 		xkb_binding_create(seat, alt, XKB_KEY_Tab, ACTION_FOCUS_NEXT);
 		xkb_binding_create(seat, super, XKB_KEY_Escape, ACTION_EXIT);
+		xkb_binding_create(seat, alt, XKB_KEY_R, ACTION_LAUNCH);  	
 		pointer_binding_create(seat, super, BTN_LEFT, ACTION_MOVE);
 		pointer_binding_create(seat, alt, BTN_LEFT, ACTION_RESIZE);
 	}

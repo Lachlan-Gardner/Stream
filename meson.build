@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: 0BSD
 
 project(
-  'tinyrwm',
+  'stream',
   'c',
   meson_version: '>= 1.8.0',
   version: '0.1',
@@ -29,7 +29,7 @@ generated = wl_mod.scan_xml(
 
 exe = executable(
   'stream',
-  'tinyrwm.c',
+  'stream.c',
   generated,
   dependencies: [
     wayland_client,
