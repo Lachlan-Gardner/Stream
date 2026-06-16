@@ -13,7 +13,6 @@
 #include <wayland-client-protocol.h>
 #include <river-window-management-v1-client-protocol.h>
 #include <river-xkb-bindings-v1-client-protocol.h>
-
 #include <linux/input-event-codes.h>
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
@@ -45,7 +44,7 @@ struct Window {
 
 enum Action {
 	ACTION_NONE,
-	ACTION_SPAWN_FOOT,
+	ACTION_SPAWN_TERMINAL,
 	ACTION_CLOSE,
 	ACTION_FOCUS_NEXT,
 	ACTION_MOVE,
@@ -84,7 +83,7 @@ struct Seat {
 
 	struct wl_list xkb_bindings; // XkbBinding
 	struct wl_list pointer_bindings; // PointerBinding
-	enum Action pending_action;
+	enum Action pending_action; //? What is being given to the compositor before it is checked for a binding to carry out.
 
 	enum SeatOp op;
 	// For SEAT_OP_MOVE and SEAT_OP_RESIZE
@@ -264,8 +263,7 @@ static void xkb_binding_destroy(struct XkbBinding *binding) {
 	free(binding);
 }
 
-static void xkb_binding_create(
-		struct Seat *seat, uint32_t mods, xkb_keysym_t keysym, enum Action action) {
+static void xkb_binding_create(struct Seat *seat, uint32_t mods, xkb_keysym_t keysym, enum Action action) {
 	struct XkbBinding *binding = calloc(1, sizeof(struct XkbBinding));
 	binding->obj = river_xkb_bindings_v1_get_xkb_binding(xkb_bindings_v1, seat->obj, keysym, mods);
 	binding->seat = seat;
@@ -430,9 +428,9 @@ static void seat_action(struct Seat *seat, enum Action action) {
 	switch (action) {
 	case ACTION_NONE:
 		break;
-	case ACTION_SPAWN_FOOT:
+	case ACTION_SPAWN_TERMINAL:
 		if (fork() == 0) {
-			execlp("foot", "foot", (char *)0);
+			execlp("kitty", "kitty", (char *)0);
 		}
 		break;
 	case ACTION_CLOSE:
@@ -468,12 +466,13 @@ static void seat_manage(struct Seat *seat) {
 	if (seat->new) {
 		seat->new = false;
 		const uint32_t super = RIVER_SEAT_V1_MODIFIERS_MOD4;
-		xkb_binding_create(seat, super, XKB_KEY_space, ACTION_SPAWN_FOOT);
-		xkb_binding_create(seat, super, XKB_KEY_q, ACTION_CLOSE);
-		xkb_binding_create(seat, super, XKB_KEY_n, ACTION_FOCUS_NEXT);
+		const uint32_t alt = RIVER_SEAT_V1_MODIFIERS_MOD1;
+		xkb_binding_create(seat, super, XKB_KEY_t, ACTION_SPAWN_TERMINAL);
+		xkb_binding_create(seat, super, XKB_KEY_w, ACTION_CLOSE);
+		xkb_binding_create(seat, alt, XKB_KEY_Tab, ACTION_FOCUS_NEXT);
 		xkb_binding_create(seat, super, XKB_KEY_Escape, ACTION_EXIT);
 		pointer_binding_create(seat, super, BTN_LEFT, ACTION_MOVE);
-		pointer_binding_create(seat, super, BTN_RIGHT, ACTION_RESIZE);
+		pointer_binding_create(seat, alt, BTN_LEFT, ACTION_RESIZE);
 	}
 
 	// If no window was interacted with in the current manage sequence,
