@@ -2,10 +2,8 @@
 //TODO Minimise and maximise.
 //TODO Toggle screen on and off - can use a different function key than F7.
 //TODO Brightness keys
+//TODO Fix dwl quitting crashing wayland and causing computer to freeze (It actually crashed so hard I can't even close the window it's running in.)
 
-/*
- * See LICENSE file for copyright and license details.
- */
 #include <getopt.h>
 #include <libinput.h>
 #include <linux/input-event-codes.h>
@@ -143,6 +141,7 @@ typedef struct {
 	struct wl_listener fclose;
 	struct wl_listener ffullscreen;
 	struct wl_listener fdestroy;
+	struct wl_listener fmaximize;
 #ifdef XWAYLAND
 	struct wl_listener activate;
 	struct wl_listener associate;
@@ -153,6 +152,8 @@ typedef struct {
 	unsigned int bw;
 	uint32_t tags;
 	int isfloating, isurgent, isfullscreen, isminimized, ismaximized;
+	struct wl_listener requestMinimise;
+	struct wl_listener requestMaximize;
 	uint32_t resize; /* configure serial of a pending resize */
 } Client;
 
@@ -393,6 +394,7 @@ static void factivatenotify(struct wl_listener *listener, void *data);
 static void fclosenotify(struct wl_listener *listener, void *data);
 static void fdestroynotify(struct wl_listener *listener, void *data);
 static void ffullscreennotify(struct wl_listener *listener, void *data);
+static void fmaximizenotify(struct wl_listener *listener, void *data);
 
 /* variables */
 static pid_t child_pid = -1;
@@ -1823,13 +1825,17 @@ fullscreennotify(struct wl_listener *listener, void *data)
 	setfullscreen(c, client_wants_fullscreen(c));
 }
 
+void setminimize(Client *c, int minimise) {
+	
+}
+
 void minimizenotify(struct wl_listener *listener, void *data) {
 	Client *c = wl_container_of(listener, c, minimize);
 	// Function to minimize window.
+	setminimize(c, 1);
 }
 
-void
-gpureset(struct wl_listener *listener, void *data)
+void gpureset(struct wl_listener *listener, void *data)
 {
 	struct wlr_renderer *old_drw = drw;
 	struct wlr_allocator *old_alloc = alloc;
@@ -1915,8 +1921,7 @@ inputdevice(struct wl_listener *listener, void *data)
 	wlr_seat_set_capabilities(seat, caps);
 }
 
-int
-keybinding(uint32_t mods, xkb_keysym_t sym)
+int keybinding(uint32_t mods, xkb_keysym_t sym)
 {
 	/*
 	 * Here we handle compositor keybindings. This is when the compositor is
@@ -1935,8 +1940,7 @@ keybinding(uint32_t mods, xkb_keysym_t sym)
 	return 0;
 }
 
-void
-keypress(struct wl_listener *listener, void *data)
+void keypress(struct wl_listener *listener, void *data)
 {
 	int i;
 	/* This event is raised when a key is pressed or released. */
@@ -2283,8 +2287,7 @@ motionrelative(struct wl_listener *listener, void *data)
 			event->unaccel_dx, event->unaccel_dy);
 }
 
-void
-moveresize(const Arg *arg)
+void moveresize(const Arg *arg)
 {
 	if (cursor_mode != CurNormal && cursor_mode != CurPressed)
 		return;
@@ -2323,8 +2326,7 @@ moveresize(const Arg *arg)
 	}
 }
 
-void
-outputmgrapply(struct wl_listener *listener, void *data)
+void outputmgrapply(struct wl_listener *listener, void *data)
 {
 	struct wlr_output_configuration_v1 *config = data;
 	outputmgrapplyortest(config, 0);
@@ -2659,8 +2661,7 @@ setfloating(Client *c, int floating)
 	printstatus();
 }
 
-void
-setfullscreen(Client *c, int fullscreen)
+void setfullscreen(Client *c, int fullscreen)
 {
 	c->isfullscreen = fullscreen;
 	if (!c->mon || !client_surface(c)->mapped)
@@ -2682,8 +2683,14 @@ setfullscreen(Client *c, int fullscreen)
 	printstatus();
 }
 
-void
-setlayout(const Arg *arg)
+//! This actually works, but it needs to maximise, not fullscreen.
+static void MaximizeNotify(struct wl_listener *listener, void *data) {
+	Client *requestedMax = wl_container_of(listener, requestedMax, requestMaximize);
+
+	togglefullscreen(0);
+}
+
+void setlayout(const Arg *arg)
 {
 	if (!selmon)
 		return;
@@ -2711,8 +2718,7 @@ setmfact(const Arg *arg)
 	arrange(selmon);
 }
 
-void
-setmon(Client *c, Monitor *m, uint32_t newtags)
+void setmon(Client *c, Monitor *m, uint32_t newtags)
 {
 	Monitor *oldmon = c->mon;
 
@@ -2739,8 +2745,7 @@ setmon(Client *c, Monitor *m, uint32_t newtags)
 	focusclient(focustop(selmon), 1);
 }
 
-void
-setpsel(struct wl_listener *listener, void *data)
+void setpsel(struct wl_listener *listener, void *data)
 {
 	/* This event is raised by the seat when a client wants to set the selection,
 	 * usually when the user copies something. wlroots allows compositors to
@@ -3500,19 +3505,18 @@ zoom(const Arg *arg)
 	arrange(selmon);
 }
 
-void
-createforeigntoplevel(Client *c)
+void createforeigntoplevel(Client *c)
 {
 	c->foreign_toplevel = wlr_foreign_toplevel_handle_v1_create(foreign_toplevel_mgr);
 
 	LISTEN(&c->foreign_toplevel->events.request_activate, &c->factivate, factivatenotify);
 	LISTEN(&c->foreign_toplevel->events.request_close, &c->fclose, fclosenotify);
 	LISTEN(&c->foreign_toplevel->events.request_fullscreen, &c->ffullscreen, ffullscreennotify);
+	LISTEN(&c->foreign_toplevel->events.request_maximize, &c->fmaximize, fmaximizenotify);
 	LISTEN(&c->foreign_toplevel->events.destroy, &c->fdestroy, fdestroynotify);
 }
 
-void
-factivatenotify(struct wl_listener *listener, void *data)
+void factivatenotify(struct wl_listener *listener, void *data)
 {
 	Client *c = wl_container_of(listener, c, factivate);
 	if (c->mon == selmon) {
@@ -3531,11 +3535,17 @@ fclosenotify(struct wl_listener *listener, void *data)
 	client_send_close(c);
 }
 
-void
-ffullscreennotify(struct wl_listener *listener, void *data) {
+void ffullscreennotify(struct wl_listener *listener, void *data) {
 	Client *c = wl_container_of(listener, c, ffullscreen);
 	struct wlr_foreign_toplevel_handle_v1_fullscreen_event *event = data;
 	setfullscreen(c, event->fullscreen);
+}
+
+//* Takes the maximise action and processes it.
+void fmaximizenotify(struct wl_listener *listener, void *data) {
+	Client *c = wl_container_of(listener, c, fmaximize);
+	struct wlr_foreign_toplevel_handle_v1_maximized_event *event = data;
+	setfullscreen(c, event->maximized);
 }
 
 void

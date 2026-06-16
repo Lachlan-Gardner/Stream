@@ -318,8 +318,7 @@ client_set_border_color(Client *c, const float color[static 4])
 		wlr_scene_rect_set_color(c->border[i], color);
 }
 
-static inline void
-client_set_fullscreen(Client *c, int fullscreen)
+static inline void client_set_fullscreen(Client *c, int fullscreen)
 {
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
@@ -337,8 +336,7 @@ client_set_scale(struct wlr_surface *s, float scale)
 	wlr_surface_set_preferred_buffer_scale(s, (int32_t)ceilf(scale));
 }
 
-static inline uint32_t
-client_set_size(Client *c, uint32_t width, uint32_t height)
+static inline uint32_t client_set_size(Client *c, uint32_t width, uint32_t height)
 {
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
@@ -401,4 +399,12 @@ client_wants_fullscreen(Client *c)
 		return c->surface.xwayland->fullscreen;
 #endif
 	return c->surface.xdg->toplevel->requested.fullscreen;
+}
+
+static inline int client_wants_maximise(Client *c) {
+	return c->surface.xdg->toplevel->requested.maximized;
+}
+
+static inline int client_wants_minimise(Client *c) {
+	return c->surface.xdg->toplevel->requested.minimized;
 }
