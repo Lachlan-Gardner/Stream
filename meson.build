@@ -28,7 +28,7 @@ generated = wl_mod.scan_xml(
 )
 
 exe = executable(
-  'tinyrwm',
+  'stream',
   'tinyrwm.c',
   generated,
   dependencies: [
