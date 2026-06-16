@@ -23,8 +23,8 @@ xkbcommon = dependency('xkbcommon')
 
 wl_mod = import('wayland')
 generated = wl_mod.scan_xml(
-  'protocol/river-window-management-v1.xml',
-  'protocol/river-xkb-bindings-v1.xml',
+  'protocols/river-window-management-v1.xml',
+  'protocols/river-xkb-bindings-v1.xml',
 )
 
 exe = executable(
