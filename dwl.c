@@ -2517,8 +2517,7 @@ requestmonstate(struct wl_listener *listener, void *data)
 	updatemons(NULL, NULL);
 }
 
-void
-resize(Client *c, struct wlr_box geo, int interact)
+void resize(Client *c, struct wlr_box geo, int interact)
 {
 	struct wlr_box *bbox;
 	struct wlr_box clip;
@@ -2550,8 +2549,7 @@ resize(Client *c, struct wlr_box geo, int interact)
 	wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip);
 }
 
-void
-run(char *startup_cmd)
+void run(char *startup_cmd)
 {
 	/* Add a Unix socket to the Wayland display. */
 	const char *socket = wl_display_add_socket_auto(dpy);
@@ -2681,13 +2679,6 @@ void setfullscreen(Client *c, int fullscreen)
 	}
 	arrange(c->mon);
 	printstatus();
-}
-
-//! This actually works, but it needs to maximise, not fullscreen.
-static void MaximizeNotify(struct wl_listener *listener, void *data) {
-	Client *requestedMax = wl_container_of(listener, requestedMax, requestMaximize);
-
-	togglefullscreen(0);
 }
 
 void setlayout(const Arg *arg)
@@ -3008,8 +2999,7 @@ spawn(const Arg *arg)
 	}
 }
 
-void
-swapfocus(const Arg *arg)
+void swapfocus(const Arg *arg)
 {
 	Client *c;
 	int found = 0;
@@ -3100,8 +3090,7 @@ startdrag(struct wl_listener *listener, void *data)
 	LISTEN_STATIC(&drag->icon->events.destroy, destroydragicon);
 }
 
-void
-tag(const Arg *arg)
+void tag(const Arg *arg)
 {
 	Client *sel = focustop(selmon);
 	if (!sel || (arg->ui & TAGMASK) == 0)
@@ -3528,8 +3517,7 @@ void factivatenotify(struct wl_listener *listener, void *data)
 	arrange(c->mon);
 }
 
-void
-fclosenotify(struct wl_listener *listener, void *data)
+void fclosenotify(struct wl_listener *listener, void *data)
 {
 	Client *c = wl_container_of(listener, c, fclose);
 	client_send_close(c);
@@ -3541,15 +3529,29 @@ void ffullscreennotify(struct wl_listener *listener, void *data) {
 	setfullscreen(c, event->fullscreen);
 }
 
+//TODO Check this for XWayland.
+//TODO Make this (probably a separate function) work with a keybind.
 //* Takes the maximise action and processes it.
 void fmaximizenotify(struct wl_listener *listener, void *data) {
+	//? I think this retrieves the thing that triggered the listener. Not sure.
 	Client *c = wl_container_of(listener, c, fmaximize);
+	//? I think this lets other things send maximize events.
 	struct wlr_foreign_toplevel_handle_v1_maximized_event *event = data;
-	setfullscreen(c, event->maximized);
+
+	int width = c->mon->m.width;
+	int height = c->mon->m.height;
+
+	struct wlr_box maxSize;
+
+	maxSize.height = height;
+	maxSize.width = width;
+	maxSize.x = 0;
+	maxSize.y = 0;
+
+	resize(c, maxSize, 0);
 }
 
-void
-fdestroynotify(struct wl_listener *listener, void *data)
+void fdestroynotify(struct wl_listener *listener, void *data)
 {
 	Client *c = wl_container_of(listener, c, fdestroy);
 	wl_list_remove(&c->factivate.link);
@@ -3569,8 +3571,7 @@ activatex11(struct wl_listener *listener, void *data)
 		wlr_xwayland_surface_activate(c->surface.xwayland, 1);
 }
 
-void
-associatex11(struct wl_listener *listener, void *data)
+void associatex11(struct wl_listener *listener, void *data)
 {
 	Client *c = wl_container_of(listener, c, associate);
 
@@ -3578,8 +3579,7 @@ associatex11(struct wl_listener *listener, void *data)
 	LISTEN(&client_surface(c)->events.unmap, &c->unmap, unmapnotify);
 }
 
-void
-configurex11(struct wl_listener *listener, void *data)
+void configurex11(struct wl_listener *listener, void *data)
 {
 	Client *c = wl_container_of(listener, c, configure);
 	struct wlr_xwayland_surface_configure_event *event = data;

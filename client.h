@@ -131,8 +131,7 @@ client_get_appid(Client *c)
 	return c->surface.xdg->toplevel->app_id ? c->surface.xdg->toplevel->app_id : "broken";
 }
 
-static inline void
-client_get_clip(Client *c, struct wlr_box *clip)
+static inline void client_get_clip(Client *c, struct wlr_box *clip)
 {
 	*clip = (struct wlr_box){
 		.x = 0,
