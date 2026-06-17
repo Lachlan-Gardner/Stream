@@ -128,8 +128,6 @@ typedef struct {
 	struct wlr_xdg_toplevel_decoration_v1 *decoration;
 	struct wl_listener commit;
 	struct wl_listener map;
-	struct wl_listener maximize;
-	struct wl_listener minimize;
 	struct wl_listener unmap;
 	struct wl_listener destroy;
 	struct wl_listener set_title;
@@ -662,30 +660,25 @@ arrangelayers(Monitor *m)
 	}
 }
 
-static const char *autostart[] = {
-        "wal -R", "awww-daemon", "waybar", "swaync", NULL,
-        NULL /* terminate */
-};
+// void autostartexec(void) {
+// 	const char *const *p;
+// 	size_t i = 0;
 
-void autostartexec(void) {
-	const char *const *p;
-	size_t i = 0;
+// 	/* count entries */
+// 	for (p = autostart; *p; autostart_len++, p++)
+// 		while (*++p);
 
-	/* count entries */
-	for (p = autostart; *p; autostart_len++, p++)
-		while (*++p);
-
-	autostart_pids = calloc(autostart_len, sizeof(pid_t));
-	for (p = autostart; *p; i++, p++) {
-		if ((autostart_pids[i] = fork()) == 0) {
-			setsid();
-			execvp(*p, (char *const *)p);
-			die("dwl: execvp %s:", *p);
-		}
-		/* skip arguments */
-		while (*++p);
-	}
-}
+// 	autostart_pids = calloc(autostart_len, sizeof(pid_t));
+// 	for (p = autostart; *p; i++, p++) {
+// 		if ((autostart_pids[i] = fork()) == 0) {
+// 			setsid();
+// 			execvp(*p, (char *const *)p);
+// 			die("dwl: execvp %s:", *p);
+// 		}
+// 		/* skip arguments */
+// 		while (*++p);
+// 	}
+// }
 
 void axisnotify(struct wl_listener *listener, void *data)
 {
@@ -877,6 +870,7 @@ cleanuplisteners(void)
 	wl_list_remove(&request_start_drag.link);
 	wl_list_remove(&start_drag.link);
 	wl_list_remove(&new_session_lock.link);
+	
 #ifdef XWAYLAND
 	wl_list_remove(&new_xwayland_surface.link);
 	wl_list_remove(&xwayland_ready.link);
@@ -1230,7 +1224,7 @@ void createnotify(struct wl_listener *listener, void *data)
 	LISTEN(&toplevel->base->surface->events.unmap, &c->unmap, unmapnotify);
 	LISTEN(&toplevel->events.destroy, &c->destroy, destroynotify);
 	LISTEN(&toplevel->events.request_fullscreen, &c->fullscreen, fullscreennotify);
-	LISTEN(&toplevel->events.request_maximize, &c->maximize, maximizenotify);
+	// LISTEN(&toplevel->events.request_maximize, &c->maximize, maximizenotify);
 	LISTEN(&toplevel->events.set_title, &c->set_title, updatetitle);
 }
 
@@ -1421,8 +1415,7 @@ destroylocksurface(struct wl_listener *listener, void *data)
 	}
 }
 
-void
-destroynotify(struct wl_listener *listener, void *data)
+void destroynotify(struct wl_listener *listener, void *data)
 {
 	/* Called when the xdg_toplevel is destroyed. */
 	Client *c = wl_container_of(listener, c, destroy);
@@ -1431,6 +1424,8 @@ destroynotify(struct wl_listener *listener, void *data)
 	wl_list_remove(&c->destroy.link);
 	wl_list_remove(&c->set_title.link);
 	wl_list_remove(&c->fullscreen.link);
+
+	
 #ifdef XWAYLAND
 	if (c->type != XDGShell) {
 		wl_list_remove(&c->activate.link);
@@ -1444,7 +1439,6 @@ destroynotify(struct wl_listener *listener, void *data)
 		wl_list_remove(&c->commit.link);
 		wl_list_remove(&c->map.link);
 		wl_list_remove(&c->unmap.link);
-		wl_list_remove(&c->maximize.link);
 	}
 	free(c);
 }
@@ -1825,16 +1819,6 @@ fullscreennotify(struct wl_listener *listener, void *data)
 	setfullscreen(c, client_wants_fullscreen(c));
 }
 
-void setminimize(Client *c, int minimise) {
-	
-}
-
-void minimizenotify(struct wl_listener *listener, void *data) {
-	Client *c = wl_container_of(listener, c, minimize);
-	// Function to minimize window.
-	setminimize(c, 1);
-}
-
 void gpureset(struct wl_listener *listener, void *data)
 {
 	struct wlr_renderer *old_drw = drw;
@@ -2129,7 +2113,7 @@ maximizenotify(struct wl_listener *listener, void *data)
 	 * capabilities, just schedule a empty configure when the client uses <5
 	 * protocol version
 	 * wlr_xdg_surface_schedule_configure() is used to send an empty reply. */
-	Client *c = wl_container_of(listener, c, maximize);
+	Client *c = wl_container_of(listener, c, fmaximize);
 	if (c->surface.xdg->initialized
 			&& wl_resource_get_version(c->surface.xdg->toplevel->resource)
 					< XDG_TOPLEVEL_WM_CAPABILITIES_SINCE_VERSION)
@@ -2563,7 +2547,7 @@ void run(char *startup_cmd)
 		die("startup: backend_start");
 
 	/* Now that the socket exists and the backend is started, run the startup command */
-	autostartexec();
+	// autostartexec();
 	if (startup_cmd) {
 		int piperw[2];
 		if (pipe(piperw) < 0)
@@ -2610,8 +2594,7 @@ void run(char *startup_cmd)
 	wl_display_run(dpy);
 }
 
-void
-setcursor(struct wl_listener *listener, void *data)
+void setcursor(struct wl_listener *listener, void *data)
 {
 	/* This event is raised by the seat when a client provides a cursor image */
 	struct wlr_seat_pointer_request_set_cursor_event *event = data;
@@ -3412,8 +3395,7 @@ virtualkeyboard(struct wl_listener *listener, void *data)
 	wlr_keyboard_group_add_keyboard(group->wlr_group, &kb->keyboard);
 }
 
-void
-virtualpointer(struct wl_listener *listener, void *data)
+void virtualpointer(struct wl_listener *listener, void *data)
 {
 	struct wlr_virtual_pointer_v1_new_pointer_event *event = data;
 	struct wlr_input_device *device = &event->new_pointer->pointer.base;
@@ -3539,10 +3521,11 @@ void fmaximizenotify(struct wl_listener *listener, void *data) {
 	struct wlr_foreign_toplevel_handle_v1_maximized_event *event = data;
 
 	int width = c->mon->m.width;
-	int height = c->mon->m.height;
+	int height = c->mon->m.height - 20;
 
 	struct wlr_box maxSize;
 
+	//! Forgot to destroy maximise listener.
 	maxSize.height = height;
 	maxSize.width = width;
 	maxSize.x = 0;
@@ -3558,6 +3541,7 @@ void fdestroynotify(struct wl_listener *listener, void *data)
 	wl_list_remove(&c->fclose.link);
 	wl_list_remove(&c->ffullscreen.link);
 	wl_list_remove(&c->fdestroy.link);
+	wl_list_remove(&c->fmaximize.link);
 }
 
 #ifdef XWAYLAND
@@ -3669,6 +3653,7 @@ xwaylandready(struct wl_listener *listener, void *data)
 int
 main(int argc, char *argv[])
 {
+	wlr_log(WLR_INFO, "starting");
 	char *startup_cmd = NULL;
 	int c;
 
