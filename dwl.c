@@ -335,15 +335,13 @@ static void maximizenotify(struct wl_listener *listener, void *data);
 static void minimizenotify(struct wl_listener *listener, void *data);
 static void monocle(Monitor *m);
 static void motionabsolute(struct wl_listener *listener, void *data);
-static void motionnotify(uint32_t time, struct wlr_input_device *device, double sx,
-		double sy, double sx_unaccel, double sy_unaccel);
+static void motionnotify(uint32_t time, struct wlr_input_device *device, double sx, double sy, double sx_unaccel, double sy_unaccel);
 static void motionrelative(struct wl_listener *listener, void *data);
 static void moveresize(const Arg *arg);
 static void outputmgrapply(struct wl_listener *listener, void *data);
 static void outputmgrapplyortest(struct wlr_output_configuration_v1 *config, int test);
 static void outputmgrtest(struct wl_listener *listener, void *data);
-static void pointerfocus(Client *c, struct wlr_surface *surface,
-		double sx, double sy, uint32_t time);
+static void pointerfocus(Client *c, struct wlr_surface *surface, double sx, double sy, uint32_t time);
 static void printstatus(void);
 static void powermgrsetmode(struct wl_listener *listener, void *data);
 static void quit(const Arg *arg);
@@ -384,8 +382,7 @@ static void view(const Arg *arg);
 static void virtualkeyboard(struct wl_listener *listener, void *data);
 static void virtualpointer(struct wl_listener *listener, void *data);
 static Monitor *xytomon(double x, double y);
-static void xytonode(double x, double y, struct wlr_surface **psurface,
-		Client **pc, LayerSurface **pl, double *nx, double *ny);
+static void xytonode(double x, double y, struct wlr_surface **psurface, Client **pc, LayerSurface **pl, double *nx, double *ny);
 static void zoom(const Arg *arg);
 static void createforeigntoplevel(Client *c);
 static void factivatenotify(struct wl_listener *listener, void *data);
@@ -404,8 +401,7 @@ static struct wlr_backend *backend;
 static struct wlr_scene *scene;
 static struct wlr_scene_tree *layers[NUM_LAYERS];
 static struct wlr_scene_tree *drag_icon;
-/// Holds the last focused window so it can be Alt Tabbed to.
-struct wlr_surface *lastFocused;
+
 /* Map from ZWLR_LAYER_SHELL_* constants to Lyr* enum */
 static const int layermap[] = { LyrBg, LyrBottom, LyrTop, LyrOverlay };
 static struct wlr_renderer *drw;
@@ -1227,11 +1223,10 @@ void createnotify(struct wl_listener *listener, void *data)
 	// LISTEN(&toplevel->events.request_maximize, &c->maximize, maximizenotify);
 	LISTEN(&toplevel->events.set_title, &c->set_title, updatetitle);
 
-	//TODO add a maximise and minimise here, maybe. DON'T FORGET TO KILL LISTENERS!!!
+	//TODO add a maximise and minimise listener here, maybe. DON'T FORGET TO KILL LISTENERS!!!
 }
 
-void
-createpointer(struct wlr_pointer *pointer)
+void createpointer(struct wlr_pointer *pointer)
 {
 	struct libinput_device *device;
 	if (wlr_input_device_is_libinput(&pointer->base)
@@ -1497,7 +1492,6 @@ dirtomon(enum wlr_direction dir)
 void focusclient(Client *c, int lift) {
 	// The last focused window.
 	struct wlr_surface *old = seat->keyboard_state.focused_surface;
-	lastFocused = old;
 	int unused_lx, unused_ly, old_client_type;
 	Client *old_c = NULL;
 	LayerSurface *old_l = NULL;
@@ -3036,36 +3030,10 @@ void swapfocus(const Arg *arg)
 			/* Tag IS visible: Just swap focus within the same view */
 			focusclient(prevclient, 1);
 		}
-	} else {
-		Arg a = {.ui = 0};
-		selmon = prevclient->mon;
-		view(&a);
-
-		/* Comment out the 3 lines above and
-		 * uncommment the following lines
-		 * if changing tags isn't desired */
-
-		/* use the following if changing tags isn't desired */
-//		int current_tag_clients = 0;
-//		Client *tmp;
-//		wl_list_for_each(tmp, &clients, link) {
-//			/* Make sure it's on the current monitor, visible on the current tag, and mapped */
-//			if (tmp->mon == selmon && (tmp->tags & selmon->tagset[selmon->seltags]) && !client_is_unmanaged(tmp)) {
-//				current_tag_clients++;
-//			}
-//		}
-//
-//		/* If there's more than 1 window here, mimic Mod+k instead of switching tags */
-//		if (current_tag_clients > 1) {
-//			Arg arg_focus = {.i = -1};
-//			focusstack(&arg_focus);
-//		}
-		/* end of not changing tags logic */
-	}
+	} 
 }
 
-void
-startdrag(struct wl_listener *listener, void *data)
+void startdrag(struct wl_listener *listener, void *data)
 {
 	struct wlr_drag *drag = data;
 	if (!drag->icon)
@@ -3340,8 +3308,7 @@ updatemons(struct wl_listener *listener, void *data)
 	wlr_output_manager_v1_set_configuration(output_mgr, config);
 }
 
-void
-updatetitle(struct wl_listener *listener, void *data)
+void updatetitle(struct wl_listener *listener, void *data)
 {
 	Client *c = wl_container_of(listener, c, set_title);
 	if (c->foreign_toplevel) {
@@ -3658,7 +3625,8 @@ xwaylandready(struct wl_listener *listener, void *data)
 int
 main(int argc, char *argv[])
 {
-	wlr_log(WLR_INFO, "starting");
+	
+	wlr_log(WLR_DEBUG, "starting Hooray");
 	char *startup_cmd = NULL;
 	int c;
 

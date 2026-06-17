@@ -277,8 +277,7 @@ client_is_stopped(Client *c)
 	return 0;
 }
 
-static inline int
-client_is_unmanaged(Client *c)
+static inline int client_is_unmanaged(Client *c)
 {
 #ifdef XWAYLAND
 	if (client_is_x11(c))
