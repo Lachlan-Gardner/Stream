@@ -1226,6 +1226,8 @@ void createnotify(struct wl_listener *listener, void *data)
 	LISTEN(&toplevel->events.request_fullscreen, &c->fullscreen, fullscreennotify);
 	// LISTEN(&toplevel->events.request_maximize, &c->maximize, maximizenotify);
 	LISTEN(&toplevel->events.set_title, &c->set_title, updatetitle);
+
+	//TODO add a maximise and minimise here, maybe. DON'T FORGET TO KILL LISTENERS!!!
 }
 
 void
@@ -3511,27 +3513,30 @@ void ffullscreennotify(struct wl_listener *listener, void *data) {
 	setfullscreen(c, event->fullscreen);
 }
 
-//TODO Check this for XWayland.
-//TODO Make this (probably a separate function) work with a keybind.
-//* Takes the maximise action and processes it.
-void fmaximizenotify(struct wl_listener *listener, void *data) {
-	//? I think this retrieves the thing that triggered the listener. Not sure.
-	Client *c = wl_container_of(listener, c, fmaximize);
-	//? I think this lets other things send maximize events.
-	struct wlr_foreign_toplevel_handle_v1_maximized_event *event = data;
-
+void maximize(Client *c) {
 	int width = c->mon->m.width;
 	int height = c->mon->m.height - 20;
 
 	struct wlr_box maxSize;
 
-	//! Forgot to destroy maximise listener.
 	maxSize.height = height;
 	maxSize.width = width;
 	maxSize.x = 0;
 	maxSize.y = 0;
 
 	resize(c, maxSize, 0);
+}
+
+//TODO Check this for XWayland.
+//TODO Make this (probably a separate function) work with a keybind.
+//* Takes the maximise action from foreign things, like waybar, and processes it.
+void fmaximizenotify(struct wl_listener *listener, void *data) {
+	//? I think this retrieves the thing that triggered the listener. Not sure.
+	Client *c = wl_container_of(listener, c, fmaximize);
+	//? I think this lets other things send maximize events.
+	struct wlr_foreign_toplevel_handle_v1_maximized_event *event = data;
+
+	maximize(c);
 }
 
 void fdestroynotify(struct wl_listener *listener, void *data)
