@@ -392,7 +392,7 @@ static void fmaximizenotify(struct wl_listener *listener, void *data);
 static void fminimizenotify(struct wl_listener *listener, void *data);
 static void maximize(Client *c);
 static void minimize(Client *c, int minimized);
-static void maximiseKeybind(const Arg *arg);
+static void maximizeKeybind(const Arg *arg);
 static void minimizeKeybind(const Arg *arg);
 
 /* variables */
@@ -3483,17 +3483,6 @@ void ffullscreennotify(struct wl_listener *listener, void *data) {
 /// @param c The client to maximise.
 void maximize(Client *c) {
 	if (!c->ismaximized) {
-		 FILE *fptr;
-
-		// Open a file in writing mode
-		fptr = fopen("log.txt", "a");
-
-		// Write some text to the file
-		fprintf(fptr, "maximised = %d", c->ismaximized);
-
-		// Close the file
-		fclose(fptr); 
-
 		c->ismaximized = 1;
 		c->oldGeom = c->geom;
 
@@ -3507,39 +3496,11 @@ void maximize(Client *c) {
 			.y = 0
 		};
 
-		// Open a file in writing mode
-		fptr = fopen("log.txt", "a");
-
-		// Write some text to the file
-		fprintf(fptr, "2 maximised = %d", c->ismaximized);
-
-		// Close the file
-		fclose(fptr); 
-
 		resize(c, maxSize, 0);
-		// Open a file in writing mode
-		fptr = fopen("log.txt", "a");
-
-		// Write some text to the file
-		fprintf(fptr, "3 maximised = %d", c->ismaximized);
-
-		// Close the file
-		fclose(fptr); 
 	} else {
 		c->ismaximized = 0;
 
 		resize(c, c->oldGeom, 1);
-
-		FILE *fptr;
-
-		// Open a file in writing mode
-		fptr = fopen("log.txt", "a");
-
-		// Write some text to the file
-		fprintf(fptr, "4 maximised = %d", c->ismaximized);
-
-		// Close the file
-		fclose(fptr); 
 	}
 }
 
@@ -3567,19 +3528,10 @@ void minimizeKeybind(const Arg *arg) {
 /// @brief Toggle maximized state for client using keybind.
 /// @param arg Not sure what this does.
 void maximizeKeybind(const Arg *arg) {
+	//TODO Make max keybind a toggle, currently only maximises.
+
 	Client *sel = focusedtop(selmon);
 	if (sel) {
-		FILE *fptr;
-
-		// Open a file in writing mode
-		fptr = fopen("log.txt", "a");
-
-		// Write some text to the file
-		fprintf(fptr, "0 maximised = %d", sel->ismaximized);
-
-		// Close the file
-		fclose(fptr);
-
 		maximize(sel);
 	}
 }
