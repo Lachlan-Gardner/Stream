@@ -1,8 +1,6 @@
 //TODO Add min resize.
-//TODO Minimise and maximise.
 //TODO Toggle screen on and off - can use a different function key than F7.
 //TODO Brightness keys
-//TODO Fix dwl quitting crashing wayland and causing computer to freeze (It actually crashed so hard I can't even close the window it's running in.)
 
 #include <getopt.h>
 #include <libinput.h>
@@ -86,6 +84,7 @@
 #define TAGMASK                 ((1u << TAGCOUNT) - 1)
 #define LISTEN(E, L, H)         wl_signal_add((E), ((L)->notify = (H), (L)))
 #define LISTEN_STATIC(E, H)     do { struct wl_listener *_l = ecalloc(1, sizeof(*_l)); _l->notify = (H); wl_signal_add((E), _l); } while (0)
+#define CREATECLIENT(C)			C->isminimized = 0;
 
 /* enums */
 enum { CurNormal, CurPressed, CurMove, CurResize }; /* cursor */
@@ -393,6 +392,8 @@ static void fmaximizenotify(struct wl_listener *listener, void *data);
 static void fminimizenotify(struct wl_listener *listener, void *data);
 static void maximize(Client *c);
 static void minimize(Client *c, int minimized);
+static void maximiseKeybind(const Arg *arg);
+static void minimizeKeybind(const Arg *arg);
 
 /* variables */
 static pid_t child_pid = -1;
@@ -1217,6 +1218,10 @@ void createnotify(struct wl_listener *listener, void *data)
 	c->surface.xdg = toplevel->base;
 	c->bw = borderpx;
 
+	// Makes the client non-minimized by default.
+	// This makes it minimize after only pressing once instead of twice.
+	CREATECLIENT(c);
+
 	LISTEN(&toplevel->base->surface->events.commit, &c->commit, commitnotify);
 	LISTEN(&toplevel->base->surface->events.map, &c->map, mapnotify);
 	LISTEN(&toplevel->base->surface->events.unmap, &c->unmap, unmapnotify);
@@ -1503,7 +1508,6 @@ void focusclient(Client *c, int lift) {
 
 	/* Raise client in stacking order if requested */
 	if (c && lift)
-		// minimize(c, 1);
 		wlr_scene_node_raise_to_top(&c->scene->node);
 	if (c && client_surface(c) == old)
 		return;
@@ -1997,8 +2001,7 @@ keyrepeat(void *data)
 	return 0;
 }
 
-void
-killclient(const Arg *arg)
+void killclient(const Arg *arg)
 {
 	Client *sel = focusedtop(selmon);
 	if (sel)
@@ -3026,8 +3029,11 @@ void swapfocus(const Arg *arg)
 			
 			/* End of not changing tags logic */
 		} else {
-			/* Tag IS visible: Just swap focus within the same view */
 			focusclient(prevclient, 1);
+
+			if (prevclient->isminimized == 1) {
+				minimize(prevclient, 1);
+			}
 		}
 	} 
 }
@@ -3110,16 +3116,14 @@ togglefloating(const Arg *arg)
 		setfloating(sel, !sel->isfloating);
 }
 
-void
-togglefullscreen(const Arg *arg)
+void togglefullscreen(const Arg *arg)
 {
 	Client *sel = focusedtop(selmon);
 	if (sel)
 		setfullscreen(sel, !sel->isfullscreen);
 }
 
-void
-toggletag(const Arg *arg)
+void toggletag(const Arg *arg)
 {
 	uint32_t newtags;
 	Client *sel = focusedtop(selmon);
@@ -3152,8 +3156,7 @@ unlocksession(struct wl_listener *listener, void *data)
 	destroylock(lock, 1);
 }
 
-void
-unmaplayersurfacenotify(struct wl_listener *listener, void *data)
+void unmaplayersurfacenotify(struct wl_listener *listener, void *data)
 {
 	LayerSurface *l = wl_container_of(listener, l, unmap);
 
@@ -3318,8 +3321,7 @@ void updatetitle(struct wl_listener *listener, void *data)
 		printstatus();
 }
 
-void
-urgent(struct wl_listener *listener, void *data)
+void urgent(struct wl_listener *listener, void *data)
 {
 	struct wlr_xdg_activation_v1_request_activate_event *event = data;
 	Client *c = NULL;
@@ -3481,25 +3483,63 @@ void ffullscreennotify(struct wl_listener *listener, void *data) {
 /// @param c The client to maximise.
 void maximize(Client *c) {
 	if (!c->ismaximized) {
+		 FILE *fptr;
+
+		// Open a file in writing mode
+		fptr = fopen("log.txt", "a");
+
+		// Write some text to the file
+		fprintf(fptr, "maximised = %d", c->ismaximized);
+
+		// Close the file
+		fclose(fptr); 
+
+		c->ismaximized = 1;
 		c->oldGeom = c->geom;
 
 		int width = c->mon->m.width;
 		int height = c->mon->m.height - 20;
 
-		struct wlr_box maxSize;
+		struct wlr_box maxSize = {
+			.height = height,
+			.width = width,
+			.x = 0,
+			.y = 0
+		};
 
-		maxSize.height = height;
-		maxSize.width = width;
-		maxSize.x = 0;
-		maxSize.y = 0;
+		// Open a file in writing mode
+		fptr = fopen("log.txt", "a");
+
+		// Write some text to the file
+		fprintf(fptr, "2 maximised = %d", c->ismaximized);
+
+		// Close the file
+		fclose(fptr); 
 
 		resize(c, maxSize, 0);
+		// Open a file in writing mode
+		fptr = fopen("log.txt", "a");
 
-		c->ismaximized = 1;
+		// Write some text to the file
+		fprintf(fptr, "3 maximised = %d", c->ismaximized);
+
+		// Close the file
+		fclose(fptr); 
 	} else {
+		c->ismaximized = 0;
+
 		resize(c, c->oldGeom, 1);
 
-		c->ismaximized = 0;
+		FILE *fptr;
+
+		// Open a file in writing mode
+		fptr = fopen("log.txt", "a");
+
+		// Write some text to the file
+		fprintf(fptr, "4 maximised = %d", c->ismaximized);
+
+		// Close the file
+		fclose(fptr); 
 	}
 }
 
@@ -3507,11 +3547,41 @@ void maximize(Client *c) {
 /// @param c The client to minimize.
 /// @param minimized The current minimized state.
 void minimize(Client *c, int minimized) {
-	c->isminimized = (minimized) ? 0 : 1;
+	//TODO Make alt tab unminimize client, could use activate?
+	c->isminimized = (minimized || minimized == NULL) ? 0 : 1;
 
 	// Disables/enables the output so that it isn't interactable and doesn't update.
 	//? It also hides the ouput now, I don't know why.
 	wlr_scene_node_set_enabled(&c->scene->node, c->isminimized);
+}
+
+/// @brief Toggle minimized state for client using keybind.
+/// @param arg Not sure what this does.
+void minimizeKeybind(const Arg *arg) {
+	Client *sel = focusedtop(selmon);
+	if (sel) {
+		minimize(sel, sel->isminimized);
+	}
+}
+
+/// @brief Toggle maximized state for client using keybind.
+/// @param arg Not sure what this does.
+void maximizeKeybind(const Arg *arg) {
+	Client *sel = focusedtop(selmon);
+	if (sel) {
+		FILE *fptr;
+
+		// Open a file in writing mode
+		fptr = fopen("log.txt", "a");
+
+		// Write some text to the file
+		fprintf(fptr, "0 maximised = %d", sel->ismaximized);
+
+		// Close the file
+		fclose(fptr);
+
+		maximize(sel);
+	}
 }
 
 //TODO Check this for XWayland.
