@@ -141,6 +141,7 @@ typedef struct {
 	struct wl_listener ffullscreen;
 	struct wl_listener fdestroy;
 	struct wl_listener fmaximize;
+	struct wl_listener fminimize;
 #ifdef XWAYLAND
 	struct wl_listener activate;
 	struct wl_listener associate;
@@ -151,8 +152,6 @@ typedef struct {
 	unsigned int bw;
 	uint32_t tags;
 	int isfloating, isurgent, isfullscreen, isminimized, ismaximized;
-	struct wl_listener requestMinimise;
-	struct wl_listener requestMaximize;
 	uint32_t resize; /* configure serial of a pending resize */
 } Client;
 
@@ -391,6 +390,9 @@ static void fclosenotify(struct wl_listener *listener, void *data);
 static void fdestroynotify(struct wl_listener *listener, void *data);
 static void ffullscreennotify(struct wl_listener *listener, void *data);
 static void fmaximizenotify(struct wl_listener *listener, void *data);
+static void fminimizenotify(struct wl_listener *listener, void *data);
+static void maximize(Client *c);
+static void minimize(Client *c, int minimized);
 
 /* variables */
 static pid_t child_pid = -1;
@@ -1501,8 +1503,8 @@ void focusclient(Client *c, int lift) {
 
 	/* Raise client in stacking order if requested */
 	if (c && lift)
+		// minimize(c, 1);
 		wlr_scene_node_raise_to_top(&c->scene->node);
-
 	if (c && client_surface(c) == old)
 		return;
 
@@ -2097,8 +2099,7 @@ unset_fullscreen:
 	}
 }
 
-void
-maximizenotify(struct wl_listener *listener, void *data)
+void maximizenotify(struct wl_listener *listener, void *data)
 {
 	/* This event is raised when a client would like to maximize itself,
 	 * typically because the user clicked on the maximize button on
@@ -3448,6 +3449,7 @@ void createforeigntoplevel(Client *c)
 	LISTEN(&c->foreign_toplevel->events.request_close, &c->fclose, fclosenotify);
 	LISTEN(&c->foreign_toplevel->events.request_fullscreen, &c->ffullscreen, ffullscreennotify);
 	LISTEN(&c->foreign_toplevel->events.request_maximize, &c->fmaximize, fmaximizenotify);
+	LISTEN(&c->foreign_toplevel->events.request_minimize, &c->fminimize, fminimizenotify);
 	LISTEN(&c->foreign_toplevel->events.destroy, &c->fdestroy, fdestroynotify);
 }
 
@@ -3475,6 +3477,8 @@ void ffullscreennotify(struct wl_listener *listener, void *data) {
 	setfullscreen(c, event->fullscreen);
 }
 
+/// @brief Makes the client (window) fill the available space or return it to it's non maximised state.
+/// @param c The client to maximise.
 void maximize(Client *c) {
 	if (!c->ismaximized) {
 		c->oldGeom = c->geom;
@@ -3499,9 +3503,15 @@ void maximize(Client *c) {
 	}
 }
 
-void minimize(Client *c, bool minimized) {
-	//TODO use wlr_scene_node_set_enabled(c, toggle)
-	c->ismaximized;
+/// @brief Toggle minimized state for client.
+/// @param c The client to minimize.
+/// @param minimized The current minimized state.
+void minimize(Client *c, int minimized) {
+	c->isminimized = (minimized) ? 0 : 1;
+
+	// Disables/enables the output so that it isn't interactable and doesn't update.
+	//? It also hides the ouput now, I don't know why.
+	wlr_scene_node_set_enabled(&c->scene->node, c->isminimized);
 }
 
 //TODO Check this for XWayland.
@@ -3516,6 +3526,15 @@ void fmaximizenotify(struct wl_listener *listener, void *data) {
 	maximize(c);
 }
 
+void fminimizenotify(struct wl_listener *listener, void *data) {
+	//? I think this retrieves the thing that triggered the listener. Not sure.
+	Client *c = wl_container_of(listener, c, fminimize);
+	//? I think this lets other things send maximize events.
+	struct wlr_foreign_toplevel_handle_v1_minimized_event *event = data;
+
+	minimize(c, c->isminimized);
+}
+
 void fdestroynotify(struct wl_listener *listener, void *data)
 {
 	Client *c = wl_container_of(listener, c, fdestroy);
@@ -3524,6 +3543,7 @@ void fdestroynotify(struct wl_listener *listener, void *data)
 	wl_list_remove(&c->ffullscreen.link);
 	wl_list_remove(&c->fdestroy.link);
 	wl_list_remove(&c->fmaximize.link);
+	wl_list_remove(&c->fminimize.link);
 }
 
 #ifdef XWAYLAND
