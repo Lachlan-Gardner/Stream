@@ -61,6 +61,7 @@ config.h:
 	cp config.def.h $@
 clean:
 	rm -f dwl *.o *-protocol.h
+	cp config.def.h config.h
 
 dist: clean
 	mkdir -p dwl-$(VERSION)
