@@ -1,39 +1,38 @@
 # Stream
 Strea(w)m
 
-This project requires:   
-    - wayland   
-    - river   
-    - xkbcommon   
-    - meson  
-    - pkg-config  
-    - ninja  
+Now using dwl (though the name doesn't work now, might need to change that).
+This project requires:
+    - libinput
+    - wayland
+    - wlroots (compiled with the libinput backend)
+    - xkbcommon
+    - wayland-protocols (compile-time only)
+    - pkg-config (compile-time only)
 
-Build using:
-    
-    meson setup build
-    ninja -C build
+dwl has the following additional dependencies if XWayland support is enabled:
+    - libxcb
+    - libxcb-wm
+    - wlroots (compiled with X11 support)
+    - Xwayland (runtime only)
 
-Run using:  
 
-    river -c ./build/stream
+Build for testing using:
+    make clean all
 
-Or just run flow.sh, though you might need to run:
-    
-    chmod +x ./flow.sh
-
+This will copy config.def.h to config.h (which is what dwl.c actually includes) and then compile dwl.c to dwl. You then run dwl
 
 Goals:
  - [ ] Bring over keybinds.
  - [ ] Brightness and volume controls.
- - [ ] Wallpaper.
- - [ ] Change cursor on resize and move.
+ - [x] Wallpaper.
+ - [x] Change cursor on resize and move.
  - [ ] Proper alt tab.
  - [ ] Screen on and off toggle.
- - [ ] Better resize.
+ - [x] Better resize.
  - [ ] Minimise.
- - [ ] Maximise.
- - [ ] Fullscreen.
+ - [x] Maximise.
+ - [x] Fullscreen.
  - [ ] Taskbar.
  - [ ] Exclusion zone.
  - [ ] Psuedotiling. (Possibly a pipe dream)
