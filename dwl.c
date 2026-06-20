@@ -3023,11 +3023,10 @@ void swapfocus(const Arg *arg)
 			
 			/* End of not changing tags logic */
 		} else {
-			focusclient(prevclient, 1);
-
-			if (prevclient->isminimized == 1) {
+			if (prevclient->isminimized) {
 				minimize(prevclient);
 			}
+			focusclient(prevclient, 1);
 		}
 	} 
 }
@@ -3495,35 +3494,15 @@ void maximize(Client *c) {
 /// @param c The client to minimize.
 /// @param minimized The current minimized state.
 void minimize(Client *c) {
-	FILE *fptr;
-
-	// Open a file in writing mode
-	fptr = fopen("log.txt", "a");
-
-	// Write some text to the file
-	fprintf(fptr, "Before minimize: %d\n", c->isminimized);
-
-	// Close the file
-	fclose(fptr);
-
-	//TODO Creating a new client unminimizes, idk why. Closing also does as well.
 	//TODO Make alt tab unminimize client, could use activate?
 	c->isminimized = (c->isminimized) ? 0 : 1;
 
 	// Disables/enables the output so that it isn't interactable and doesn't update.
 	//? It also hides the ouput now, I don't know why.
 	wlr_scene_node_set_enabled(&c->scene->node, !c->isminimized);
+	client_set_suspended(c, c->isminimized);
 
 	focusclient(focusedtop(c->mon), 1);
-
-	// Open a file in writing mode
-	fptr = fopen("log.txt", "a");
-
-	// Write some text to the file
-	fprintf(fptr, "After minimize: %d\n", c->isminimized);
-
-	// Close the file
-	fclose(fptr);
 }
 
 /// @brief Toggle minimized state for client using keybind.
