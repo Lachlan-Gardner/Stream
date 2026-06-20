@@ -1569,6 +1569,12 @@ void focusclient(Client *c, int lift) {
 
 	/* Activate the new client */
 	client_activate_surface(client_surface(c), 1);
+
+	// Makes the client unminimized if it's minimized.
+	if (c->isminimized) {
+		minimize(c);
+	}
+
 	if (c->foreign_toplevel)
 		wlr_foreign_toplevel_handle_v1_set_activated(c->foreign_toplevel, 1);
 }
@@ -3023,9 +3029,6 @@ void swapfocus(const Arg *arg)
 			
 			/* End of not changing tags logic */
 		} else {
-			if (prevclient->isminimized) {
-				minimize(prevclient);
-			}
 			focusclient(prevclient, 1);
 		}
 	} 
