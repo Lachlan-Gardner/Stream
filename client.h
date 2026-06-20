@@ -367,8 +367,10 @@ client_set_tiled(Client *c, uint32_t edges)
 	}
 }
 
-static inline void
-client_set_suspended(Client *c, int suspended)
+/// @brief Sets the client suspended so they know not to try repaint. I think.
+/// @param c The client to do this to.
+/// @param suspended Whether to suspend or not.
+static inline void client_set_suspended(Client *c, int suspended)
 {
 #ifdef XWAYLAND
 	if (client_is_x11(c))
