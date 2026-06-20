@@ -391,7 +391,7 @@ static void ffullscreennotify(struct wl_listener *listener, void *data);
 static void fmaximizenotify(struct wl_listener *listener, void *data);
 static void fminimizenotify(struct wl_listener *listener, void *data);
 static void maximize(Client *c);
-static void minimize(Client *c, int minimized);
+static void minimize(Client *c);
 static void maximizeKeybind(const Arg *arg);
 static void minimizeKeybind(const Arg *arg);
 
@@ -569,8 +569,10 @@ void arrange(Monitor *m)
 
 	wl_list_for_each(c, &clients, link) {
 		if (c->mon == m) {
-			wlr_scene_node_set_enabled(&c->scene->node, VISIBLEON(c, m));
-			client_set_suspended(c, !VISIBLEON(c, m));
+			if (!c->isminimized) {
+				wlr_scene_node_set_enabled(&c->scene->node, VISIBLEON(c, m));
+				client_set_suspended(c, !VISIBLEON(c, m));
+			}
 		}
 	}
 
@@ -599,8 +601,7 @@ void arrange(Monitor *m)
 	checkidleinhibitor(NULL);
 }
 
-void
-arrangelayer(Monitor *m, struct wl_list *list, struct wlr_box *usable_area, int exclusive)
+void arrangelayer(Monitor *m, struct wl_list *list, struct wlr_box *usable_area, int exclusive)
 {
 	LayerSurface *l;
 	struct wlr_box full_area = m->m;
@@ -905,8 +906,7 @@ closemon(Monitor *m)
 	printstatus();
 }
 
-void
-commitlayersurfacenotify(struct wl_listener *listener, void *data)
+void commitlayersurfacenotify(struct wl_listener *listener, void *data)
 {
 	LayerSurface *l = wl_container_of(listener, l, surface_commit);
 	struct wlr_layer_surface_v1 *layer_surface = l->layer_surface;
@@ -1073,8 +1073,7 @@ createkeyboardgroup(void)
 	return group;
 }
 
-void
-createlayersurface(struct wl_listener *listener, void *data)
+void createlayersurface(struct wl_listener *listener, void *data)
 {
 	struct wlr_layer_surface_v1 *layer_surface = data;
 	LayerSurface *l;
@@ -1229,7 +1228,6 @@ void createnotify(struct wl_listener *listener, void *data)
 	LISTEN(&toplevel->events.request_fullscreen, &c->fullscreen, fullscreennotify);
 	// LISTEN(&toplevel->events.request_maximize, &c->maximize, maximizenotify);
 	LISTEN(&toplevel->events.set_title, &c->set_title, updatetitle);
-
 	//TODO add a maximise and minimise listener here, maybe. DON'T FORGET TO KILL LISTENERS!!!
 }
 
@@ -1447,8 +1445,7 @@ void destroynotify(struct wl_listener *listener, void *data)
 	free(c);
 }
 
-void
-destroypointerconstraint(struct wl_listener *listener, void *data)
+void destroypointerconstraint(struct wl_listener *listener, void *data)
 {
 	PointerConstraint *pointer_constraint = wl_container_of(listener, pointer_constraint, destroy);
 
@@ -1461,8 +1458,7 @@ destroypointerconstraint(struct wl_listener *listener, void *data)
 	free(pointer_constraint);
 }
 
-void
-destroysessionlock(struct wl_listener *listener, void *data)
+void destroysessionlock(struct wl_listener *listener, void *data)
 {
 	SessionLock *lock = wl_container_of(listener, lock, destroy);
 	destroylock(lock, 0);
@@ -1800,9 +1796,9 @@ void focusstack(const Arg *arg)
 	focusclient(c, 1);
 }
 
-/* We probably should change the name of this: it sounds like it
- * will focus the topmost client of this mon, when actually will
- * only return that client */
+/// @brief Get the currently on top window.
+/// @param m The monitor the window will be.
+/// @return The top window.
 Client *focusedtop(Monitor *m)
 {
 	Client *c;
@@ -1813,8 +1809,7 @@ Client *focusedtop(Monitor *m)
 	return NULL;
 }
 
-void
-fullscreennotify(struct wl_listener *listener, void *data)
+void fullscreennotify(struct wl_listener *listener, void *data)
 {
 	Client *c = wl_container_of(listener, c, fullscreen);
 	setfullscreen(c, client_wants_fullscreen(c));
@@ -1844,8 +1839,7 @@ void gpureset(struct wl_listener *listener, void *data)
 	wlr_renderer_destroy(old_drw);
 }
 
-void
-handlesig(int signo)
+void handlesig(int signo)
 {
 	if (signo == SIGCHLD) {
 		pid_t pid, *p, *lim;
@@ -3032,7 +3026,7 @@ void swapfocus(const Arg *arg)
 			focusclient(prevclient, 1);
 
 			if (prevclient->isminimized == 1) {
-				minimize(prevclient, 1);
+				minimize(prevclient);
 			}
 		}
 	} 
@@ -3136,8 +3130,7 @@ void toggletag(const Arg *arg)
 	printstatus();
 }
 
-void
-toggleview(const Arg *arg)
+void toggleview(const Arg *arg)
 {
 	uint32_t newtagset;
 	if (!(newtagset = selmon ? selmon->tagset[selmon->seltags] ^ (arg->ui & TAGMASK) : 0))
@@ -3149,8 +3142,7 @@ toggleview(const Arg *arg)
 	printstatus();
 }
 
-void
-unlocksession(struct wl_listener *listener, void *data)
+void unlocksession(struct wl_listener *listener, void *data)
 {
 	SessionLock *lock = wl_container_of(listener, lock, unlock);
 	destroylock(lock, 1);
@@ -3171,8 +3163,7 @@ void unmaplayersurfacenotify(struct wl_listener *listener, void *data)
 	motionnotify(0, NULL, 0, 0, 0, 0);
 }
 
-void
-unmapnotify(struct wl_listener *listener, void *data)
+void unmapnotify(struct wl_listener *listener, void *data)
 {
 	/* Called when the surface is unmapped, and should no longer be shown. */
 	Client *c = wl_container_of(listener, c, unmap);
@@ -3202,8 +3193,7 @@ unmapnotify(struct wl_listener *listener, void *data)
 	motionnotify(0, NULL, 0, 0, 0, 0);
 }
 
-void
-updatemons(struct wl_listener *listener, void *data)
+void updatemons(struct wl_listener *listener, void *data)
 {
 	/*
 	 * Called whenever the output layout changes: adding or removing a
@@ -3372,15 +3362,13 @@ void virtualpointer(struct wl_listener *listener, void *data)
 		wlr_cursor_map_input_to_output(cursor, device, event->suggested_output);
 }
 
-Monitor *
-xytomon(double x, double y)
+Monitor *xytomon(double x, double y)
 {
 	struct wlr_output *o = wlr_output_layout_output_at(output_layout, x, y);
 	return o ? o->data : NULL;
 }
 
-void
-xytonode(double x, double y, struct wlr_surface **psurface,
+void xytonode(double x, double y, struct wlr_surface **psurface,
 		Client **pc, LayerSurface **pl, double *nx, double *ny)
 {
 	struct wlr_scene_node *node, *pnode;
@@ -3410,8 +3398,7 @@ xytonode(double x, double y, struct wlr_surface **psurface,
 	if (pl) *pl = l;
 }
 
-void
-zoom(const Arg *arg)
+void zoom(const Arg *arg)
 {
 	Client *c, *sel = focusedtop(selmon);
 
@@ -3507,13 +3494,36 @@ void maximize(Client *c) {
 /// @brief Toggle minimized state for client.
 /// @param c The client to minimize.
 /// @param minimized The current minimized state.
-void minimize(Client *c, int minimized) {
+void minimize(Client *c) {
+	FILE *fptr;
+
+	// Open a file in writing mode
+	fptr = fopen("log.txt", "a");
+
+	// Write some text to the file
+	fprintf(fptr, "Before minimize: %d\n", c->isminimized);
+
+	// Close the file
+	fclose(fptr);
+
+	//TODO Creating a new client unminimizes, idk why. Closing also does as well.
 	//TODO Make alt tab unminimize client, could use activate?
-	c->isminimized = (minimized || minimized == NULL) ? 0 : 1;
+	c->isminimized = (c->isminimized) ? 0 : 1;
 
 	// Disables/enables the output so that it isn't interactable and doesn't update.
 	//? It also hides the ouput now, I don't know why.
-	wlr_scene_node_set_enabled(&c->scene->node, c->isminimized);
+	wlr_scene_node_set_enabled(&c->scene->node, !c->isminimized);
+
+	focusclient(focusedtop(c->mon), 1);
+
+	// Open a file in writing mode
+	fptr = fopen("log.txt", "a");
+
+	// Write some text to the file
+	fprintf(fptr, "After minimize: %d\n", c->isminimized);
+
+	// Close the file
+	fclose(fptr);
 }
 
 /// @brief Toggle minimized state for client using keybind.
@@ -3521,15 +3531,13 @@ void minimize(Client *c, int minimized) {
 void minimizeKeybind(const Arg *arg) {
 	Client *sel = focusedtop(selmon);
 	if (sel) {
-		minimize(sel, sel->isminimized);
+		minimize(sel);
 	}
 }
 
 /// @brief Toggle maximized state for client using keybind.
 /// @param arg Not sure what this does.
 void maximizeKeybind(const Arg *arg) {
-	//TODO Make max keybind a toggle, currently only maximises.
-
 	Client *sel = focusedtop(selmon);
 	if (sel) {
 		maximize(sel);
@@ -3554,7 +3562,7 @@ void fminimizenotify(struct wl_listener *listener, void *data) {
 	//? I think this lets other things send maximize events.
 	struct wlr_foreign_toplevel_handle_v1_minimized_event *event = data;
 
-	minimize(c, c->isminimized);
+	minimize(c);
 }
 
 void fdestroynotify(struct wl_listener *listener, void *data)
@@ -3677,8 +3685,6 @@ xwaylandready(struct wl_listener *listener, void *data)
 int
 main(int argc, char *argv[])
 {
-	
-	wlr_log(WLR_DEBUG, "starting Hooray");
 	char *startup_cmd = NULL;
 	int c;
 
