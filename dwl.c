@@ -1476,8 +1476,7 @@ destroykeyboardgroup(struct wl_listener *listener, void *data)
 	free(group);
 }
 
-Monitor *
-dirtomon(enum wlr_direction dir)
+Monitor *dirtomon(enum wlr_direction dir)
 {
 	struct wlr_output *next;
 	if (!wlr_output_layout_get(output_layout, selmon->wlr_output))
@@ -1809,7 +1808,9 @@ Client *focusedtop(Monitor *m)
 {
 	Client *c;
 	wl_list_for_each(c, &fstack, flink) {
-		if (VISIBLEON(c, m))
+		// Check whether the window is visible, and if it's not currently minimized.
+		// This was so a window that was just minimized doesn't retain focus.
+		if (VISIBLEON(c, m) && !c->isminimized)
 			return c;
 	}
 	return NULL;
@@ -3505,6 +3506,10 @@ void minimize(Client *c) {
 	wlr_scene_node_set_enabled(&c->scene->node, !c->isminimized);
 	client_set_suspended(c, c->isminimized);
 
+	// Makes it so the minimized node is below other nodes, like the visible ones.
+	wlr_scene_node_lower_to_bottom(&c->scene->node);
+
+	// Focuses the new top window.
 	focusclient(focusedtop(c->mon), 1);
 }
 
