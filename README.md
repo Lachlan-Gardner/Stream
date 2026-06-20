@@ -17,8 +17,11 @@ dwl has the following additional dependencies if XWayland support is enabled:
     - Xwayland (runtime only)
 
 
-Build for testing using:
+Build for testing using:   
+     
     make clean all
+         
+
 
 This will copy config.def.h to config.h (which is what dwl.c actually includes) and then compile dwl.c to dwl. You then run dwl
 
@@ -27,12 +30,13 @@ Goals:
  - [ ] Brightness and volume controls.
  - [x] Wallpaper.
  - [x] Change cursor on resize and move.
- - [ ] Proper alt tab.
+ - [x] Proper alt tab.
  - [ ] Screen on and off toggle.
  - [x] Better resize.
- - [ ] Minimise.
+ - [x] Minimise.
  - [x] Maximise.
  - [x] Fullscreen.
  - [ ] Taskbar.
  - [ ] Exclusion zone.
+ - [ ] Autostart.
  - [ ] Psuedotiling. (Possibly a pipe dream)
