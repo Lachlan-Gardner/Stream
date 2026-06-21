@@ -128,21 +128,49 @@ static const enum libinput_config_tap_button_map button_map = LIBINPUT_CONFIG_TA
 #define SHCMD(cmd) { .v = (const char*[]){ "/bin/sh", "-c", cmd, NULL } }
 
 /* commands */
-static const char *termcmd[] = { "kitty", NULL };
-static const char *menucmd[] = { "rofi-app-menu.sh", NULL };
+static const char *terminal[] = { "kitty", NULL };
+static const char *menu[] = { "rofi-app-menu.sh", NULL };
 static const char *browser[] = { "firefox", NULL };
+static const char *fileManager[] = { "kitty", "yazi", NULL };
+static const char *codeEditor[] = { "code", NULL };
+static const char *lockScreen[] = { "hyprlock", NULL };
+static const char *btop[] = { "kitty", "btop", NULL };
+static const char *wifiMenu[] = { "kitty", "nmtui", NULL };
+static const char *bluetoothMenu[] = { "kitty", "bluetui", NULL };
+static const char *powerMenu[] = { "rofi-power-menu", NULL };
+static const char *clipboardHistory[] = { "Clipboard-History", NULL };
+static const char *wallpaperSwitcher[] = { "rofi-wallpaper-switcher", NULL };
+
+static const char *playPause[] = { "playerctl", "play-pause", NULL };
+static const char *mediaNext[] = { "playerctl", "next", NULL };
 
 // Basic volume controls.
-static const char *up_vol[]   = { "pactl", "set-sink-volume", "@DEFAULT_SINK@", "+10%",   NULL };
-static const char *down_vol[] = { "pactl", "set-sink-volume", "@DEFAULT_SINK@", "-10%",   NULL };
+static const char *up_vol[]   = { "pactl", "set-sink-volume", "@DEFAULT_SINK@", "+5%", NULL };
+static const char *down_vol[] = { "pactl", "set-sink-volume", "@DEFAULT_SINK@", "-5%", NULL };
 static const char *mute_vol[] = { "pactl", "set-sink-mute",   "@DEFAULT_SINK@", "toggle", NULL };
+
+static const char *up_brightness[]   = { "brightnessctl", "-e4", "-n2", "set", "5%+", NULL };
+static const char *down_brightness[] =  { "brightnessctl", "-e4", "-n2", "set", "5%-", NULL };
+
+static const char *screenToggle[] = { "wlr-randr", "--output", "eDP-1", "--toggle", NULL };
 
 static const Key keys[] = {
 	/* Note that Shift changes certain key codes: 2 -> at, etc. */
 	/* modifier                  key                  function          argument */
-	{ WLR_MODIFIER_ALT,          XKB_KEY_r,           spawn,            {.v = menucmd} },
-	{ MODKEY,                    XKB_KEY_t,           spawn,            {.v = termcmd} },
+	{ WLR_MODIFIER_ALT,          XKB_KEY_r,           spawn,            {.v = menu} },
+	{ MODKEY,                    XKB_KEY_t,           spawn,            {.v = terminal} },
   	{ MODKEY,                    XKB_KEY_f,           spawn,            {.v = browser} },
+	{ MODKEY, 					 XKB_KEY_e, 		  spawn, 			{.v = fileManager} },
+	{ MODKEY, 					 XKB_KEY_v, 		  spawn, 			{.v = codeEditor} },
+	{ MODKEY, 					 XKB_KEY_l, 		  spawn, 			{.v = lockScreen} },
+	{ MODKEY, 					 XKB_KEY_b, 		  spawn, 			{.v = btop} },
+	{ WLR_MODIFIER_ALT,			 XKB_KEY_w,			  spawn, 			{.v = wifiMenu} },
+	{ WLR_MODIFIER_ALT,			 XKB_KEY_b,			  spawn, 			{.v = bluetoothMenu} },
+	{ WLR_MODIFIER_ALT,			 XKB_KEY_p,			  spawn, 			{.v = powerMenu} },
+	{ WLR_MODIFIER_ALT,			 XKB_KEY_q,			  spawn, 			{.v = clipboardHistory} },
+	{ WLR_MODIFIER_ALT,			 XKB_KEY_t,			  spawn, 			{.v = wallpaperSwitcher} },
+	{ WLR_MODIFIER_ALT, 		 XKB_KEY_x,     	  spawn, 			{.v = playPause} },
+	{ WLR_MODIFIER_ALT, 		 XKB_KEY_z,     	  spawn, 			{.v = mediaNext} },
 	{ WLR_MODIFIER_ALT, 		 XKB_KEY_Tab,		  swapfocus,        {0} },
 	{ MODKEY,                    XKB_KEY_j,           focusstack,       {.i = +1} },
 	{ MODKEY,                    XKB_KEY_k,           focusstack,       {.i = -1} },
@@ -153,8 +181,6 @@ static const Key keys[] = {
 	{ MODKEY,                    XKB_KEY_Return,      zoom,             {0} },
 	{ MODKEY,                    XKB_KEY_Tab,         view,             {0} },
 	{ MODKEY,                    XKB_KEY_w,           killclient,       {0} },
-	{ MODKEY,                    XKB_KEY_t,           setlayout,        {.v = &layouts[0]} },
-	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_f,           setlayout,        {.v = &layouts[1]} },
 	{ MODKEY,                    XKB_KEY_space,       setlayout,        {0} },
 	{ MODKEY|WLR_MODIFIER_SHIFT, XKB_KEY_space,       togglefloating,   {0} },
 	{ MODKEY,                    XKB_KEY_a,           togglefullscreen, {0} },
@@ -169,6 +195,10 @@ static const Key keys[] = {
   	{ 0, XKB_KEY_XF86AudioRaiseVolume, spawn, {.v = up_vol } },
   	{ 0, XKB_KEY_XF86AudioLowerVolume, spawn, {.v = down_vol } },
   	{ 0, XKB_KEY_XF86AudioMute, spawn, {.v = mute_vol } },
+	{ 0, XKB_KEY_XF86MonBrightnessUp, spawn, {.v = up_brightness } },
+  	{ 0, XKB_KEY_XF86MonBrightnessDown, spawn, {.v = down_brightness } },
+	{ 0, XKB_KEY_XF86Launch1, spawn, {.v = screenToggle} },
+	{ 0, XKB_KEY_F12, spawn, {.v = screenToggle} },
 	TAGKEYS(          XKB_KEY_1, XKB_KEY_exclam,                        0),
 	TAGKEYS(          XKB_KEY_2, XKB_KEY_at,                            1),
 	TAGKEYS(          XKB_KEY_3, XKB_KEY_numbersign,                    2),

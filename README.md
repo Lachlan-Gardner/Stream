@@ -26,17 +26,20 @@ Build for testing using:
 This will copy config.def.h to config.h (which is what dwl.c actually includes) and then compile dwl.c to dwl. You then run dwl
 
 Goals:
- - [ ] Bring over keybinds.
- - [ ] Brightness and volume controls.
+ - [x] Bring over keybinds.
+ - [x] Brightness and volume controls.
  - [x] Wallpaper.
  - [x] Change cursor on resize and move.
  - [x] Proper alt tab.
- - [ ] Screen on and off toggle.
+ - [x] Screen on and off toggle.
  - [x] Better resize.
  - [x] Minimise.
  - [x] Maximise.
  - [x] Fullscreen.
+ - [ ] Pywal integration (probably just border focus colours). 
+ - [ ] Screenshotting.
+ - [ ] Idle and locking managers.
  - [ ] Taskbar.
- - [ ] Exclusion zone.
  - [ ] Autostart.
+ - [ ] Workspaces.
  - [ ] Psuedotiling. (Possibly a pipe dream)
