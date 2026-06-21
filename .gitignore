@@ -3,3 +3,4 @@ build/
 dwl
 dwl.o
 log.txt
+config.h
