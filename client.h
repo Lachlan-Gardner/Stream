@@ -145,8 +145,14 @@ static inline void client_get_clip(Client *c, struct wlr_box *clip)
 		return;
 #endif
 
-	clip->x = c->surface.xdg->geometry.x;
-	clip->y = c->surface.xdg->geometry.y;
+	*clip = (struct wlr_box){
+		.x = c->bw,
+		.y = c->bw,
+		.width = c->geom.width - c->bw * 2,
+		.height = c->geom.height - c->bw * 2,
+	};
+	clip->x = c->geom.x;
+	clip->y = c->geom.y;
 }
 
 static inline void
@@ -161,7 +167,7 @@ client_get_geometry(Client *c, struct wlr_box *geom)
 		return;
 	}
 #endif
-	*geom = c->surface.xdg->geometry;
+	*geom = c->geom;
 }
 
 static inline Client *
@@ -214,13 +220,6 @@ client_is_float_type(Client *c)
 		xcb_size_hints_t *size_hints = surface->size_hints;
 		if (surface->modal)
 			return 1;
-
-		if (wlr_xwayland_surface_has_window_type(surface, WLR_XWAYLAND_NET_WM_WINDOW_TYPE_DIALOG)
-				|| wlr_xwayland_surface_has_window_type(surface, WLR_XWAYLAND_NET_WM_WINDOW_TYPE_SPLASH)
-				|| wlr_xwayland_surface_has_window_type(surface, WLR_XWAYLAND_NET_WM_WINDOW_TYPE_TOOLBAR)
-				|| wlr_xwayland_surface_has_window_type(surface, WLR_XWAYLAND_NET_WM_WINDOW_TYPE_UTILITY)) {
-			return 1;
-		}
 
 		return size_hints && size_hints->min_width > 0 && size_hints->min_height > 0
 			&& (size_hints->max_width == size_hints->min_width
@@ -354,8 +353,7 @@ client_set_tiled(Client *c, uint32_t edges)
 {
 #ifdef XWAYLAND
 	if (client_is_x11(c)) {
-		wlr_xwayland_surface_set_maximized(c->surface.xwayland,
-				edges != WLR_EDGE_NONE, edges != WLR_EDGE_NONE);
+		wlr_xwayland_surface_set_maximized(c->surface.xwayland,	edges != WLR_EDGE_NONE, edges != WLR_EDGE_NONE);
 		return;
   }
 #endif
@@ -384,9 +382,7 @@ static inline int
 client_wants_focus(Client *c)
 {
 #ifdef XWAYLAND
-	return client_is_unmanaged(c)
-		&& wlr_xwayland_surface_override_redirect_wants_focus(c->surface.xwayland)
-		&& wlr_xwayland_surface_icccm_input_model(c->surface.xwayland) != WLR_ICCCM_INPUT_MODEL_NONE;
+	return client_is_unmanaged(c);
 #endif
 	return 0;
 }
