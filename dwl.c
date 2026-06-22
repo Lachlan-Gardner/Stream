@@ -2223,8 +2223,7 @@ motionabsolute(struct wl_listener *listener, void *data)
 	motionnotify(event->time_msec, &event->pointer->base, dx, dy, dx, dy);
 }
 
-void
-motionnotify(uint32_t time, struct wlr_input_device *device, double dx, double dy,
+void motionnotify(uint32_t time, struct wlr_input_device *device, double dx, double dy,
 		double dx_unaccel, double dy_unaccel)
 {
 	double sx = 0, sy = 0, sx_confined, sy_confined;
@@ -2340,6 +2339,7 @@ void moveresize(const Arg *arg)
 {
 	if (cursor_mode != CurNormal && cursor_mode != CurPressed)
 		return;
+	//? What does this do?
 	xytonode(cursor->x, cursor->y, NULL, &grabc, NULL, NULL, NULL);
 	if (!grabc || client_is_unmanaged(grabc) || grabc->isfullscreen)
 		return;
@@ -2578,6 +2578,9 @@ void resize(Client *c, struct wlr_box geo, int interact)
 
 	bbox = interact ? &sgeom : &c->mon->w;
 
+	geo.width = geo.width < 30 ? 30 : geo.width;
+	geo.height = geo.height < 30 ? 30 : geo.height;
+
 	client_set_bounds(c, geo.width, geo.height);
 	c->geom = geo;
 	applybounds(c, bbox);
@@ -2593,12 +2596,12 @@ void resize(Client *c, struct wlr_box geo, int interact)
 	wlr_scene_node_set_position(&c->border[2]->node, 0, c->bw);
 	wlr_scene_node_set_position(&c->border[3]->node, c->geom.width - c->bw, c->bw);
 
+	//TODO Fix windows opening too small. Moving also makes some of the window invisible.
 	/* this is a no-op if size hasn't changed */
 	c->resize = client_set_size(c, c->geom.width - 2 * c->bw,
 			c->geom.height - 2 * c->bw);
 	client_get_clip(c, &clip);
-	wlr_scene_subsurface_tree_set_clip(&c->scene_surface->node, &clip);
-
+	
 	if (corner_radius > 0 && c->round_border) {
 		wlr_scene_node_set_position(&c->round_border->node, 0, 0);
 		wlr_scene_rect_set_size(c->round_border, c->geom.width, c->geom.height);
@@ -3716,26 +3719,17 @@ void update_buffer_corner_radius(Client *c, struct wlr_scene_buffer *buffer)
 	wlr_scene_buffer_set_corner_radius(buffer, radius, CORNER_LOCATION_ALL);
 }
 
+/// @brief Sets the colour of the shadow made by Scenefx.
+/// @param c The client for the shadow.
 void update_client_shadow_color(Client *c)
 {
-	int has_shadow_enabled = 1;
-	const float *color;
-
-	if (!shadow || !c->shadow) {
+	if (!c->shadow) {
 		return;
 	}
 
-	color = focusedtop(c->mon) == c ? shadow_color_focus : shadow_color;
+	wlr_scene_shadow_set_color(c->shadow, shadow_color);
 
-	if ((shadow_only_floating && !c->isfloating) ||
-		in_shadow_ignore_list(client_get_appid(c)) ||
-		c->isfullscreen) {
-		color = transparent;
-		has_shadow_enabled = 0;
-	}
-
-	wlr_scene_shadow_set_color(c->shadow, color);
-	c->has_shadow_enabled = has_shadow_enabled;
+	c->has_shadow_enabled = 1;
 }
 
 void update_client_focus_decorations(Client *c, int focused, int urgent)
@@ -3744,9 +3738,9 @@ void update_client_focus_decorations(Client *c, int focused, int urgent)
 		wlr_scene_rect_set_color(c->round_border, urgent ? urgentcolor : (focused ? focuscolor : bordercolor));
 	}
 	if (shadow && c->shadow) {
-		client_set_shadow_blur_sigma(c, (int)round(focused ? shadow_blur_sigma_focus : shadow_blur_sigma));
+		client_set_shadow_blur_sigma(c, shadow_blur_sigma);
 		if (c->has_shadow_enabled) {
-			wlr_scene_shadow_set_color(c->shadow, focused ? shadow_color_focus : shadow_color);
+			wlr_scene_shadow_set_color(c->shadow, shadow_color);
 		}
 	}
 	if (opacity) {
