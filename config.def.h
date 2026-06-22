@@ -154,6 +154,8 @@ static const char *down_brightness[] =  { "brightnessctl", "-e4", "-n2", "set", 
 
 static const char *screenToggle[] = { "wlr-randr", "--output", "eDP-1", "--toggle", NULL };
 
+static const char *screenshot[] = { "Screenshot", NULL };
+
 static const Key keys[] = {
 	/* Note that Shift changes certain key codes: 2 -> at, etc. */
 	/* modifier                  key                  function          argument */
@@ -171,6 +173,7 @@ static const Key keys[] = {
 	{ WLR_MODIFIER_ALT,			 XKB_KEY_t,			  spawn, 			{.v = wallpaperSwitcher} },
 	{ WLR_MODIFIER_ALT, 		 XKB_KEY_x,     	  spawn, 			{.v = playPause} },
 	{ WLR_MODIFIER_ALT, 		 XKB_KEY_z,     	  spawn, 			{.v = mediaNext} },
+	{ 0, 						 XKB_KEY_F11, 		  spawn,	 		{.v = screenshot} },
 	{ WLR_MODIFIER_ALT, 		 XKB_KEY_Tab,		  swapfocus,        {0} },
 	{ MODKEY,                    XKB_KEY_j,           focusstack,       {.i = +1} },
 	{ MODKEY,                    XKB_KEY_k,           focusstack,       {.i = -1} },

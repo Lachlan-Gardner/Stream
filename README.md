@@ -37,7 +37,7 @@ Goals:
  - [x] Maximise.
  - [x] Fullscreen.
  - [ ] Pywal integration (probably just border focus colours). 
- - [ ] Screenshotting.
+ - [x] Screenshotting.
  - [ ] Idle and locking managers.
  - [ ] Taskbar.
  - [ ] Autostart.
