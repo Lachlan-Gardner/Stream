@@ -404,7 +404,6 @@ static void client_set_shadow_blur_sigma(Client *c, int blur_sigma);
 static void update_client_corner_radius(Client *c);
 static void update_client_shadow_color(Client *c);
 static void update_client_focus_decorations(Client *c, int focused, int urgent);
-static void update_client_blur(Client *c);
 static void update_buffer_corner_radius(Client *c, struct wlr_scene_buffer *buffer);
 static void createforeigntoplevel(Client *c);
 static void factivatenotify(struct wl_listener *listener, void *data);
@@ -2161,8 +2160,6 @@ void mapnotify(struct wl_listener *listener, void *data)
 
 	update_client_shadow_color(c);
 
-	update_client_blur(c);
-
 unset_fullscreen:
 	m = c->mon ? c->mon : xytomon(c->geom.x, c->geom.y);
 	wl_list_for_each(w, &clients, link) {
@@ -2721,8 +2718,6 @@ void setfloating(Client *c, int floating)
 
 	update_client_shadow_color(c);
 
-	update_client_blur(c);
-
 	/* If in floating layout do not change the client's layer */
 	if (!c->mon || !client_surface(c)->mapped || !c->mon->lt[c->mon->sellt]->arrange)
 		return;
@@ -2755,8 +2750,6 @@ void setfullscreen(Client *c, int fullscreen)
 	update_client_corner_radius(c);
 
 	update_client_shadow_color(c);
-
-	update_client_blur(c);
 
 	arrange(c->mon);
 	printstatus();
@@ -3700,17 +3693,6 @@ void update_client_corner_radius(Client *c)
 #ifdef XWAYLAND
 	}
 #endif
-}
-
-void update_client_blur(Client *c)
-{
-	if (!blur) {
-		return;
-	}
-
-	if (c->scene) {
-		wlr_scene_node_for_each_buffer(&c->scene_surface->node, iter_xdg_scene_buffers_blur, c);
-	}
 }
 
 void update_buffer_corner_radius(Client *c, struct wlr_scene_buffer *buffer)
