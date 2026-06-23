@@ -314,6 +314,7 @@ static void destroypointerconstraint(struct wl_listener *listener, void *data);
 static void destroysessionlock(struct wl_listener *listener, void *data);
 static void destroykeyboardgroup(struct wl_listener *listener, void *data);
 static Monitor *dirtomon(enum wlr_direction dir);
+void updateStuff(const Arg *arg);
 static void dwl_ipc_manager_bind(struct wl_client *client, void *data, uint32_t version, uint32_t id);
 static void dwl_ipc_manager_destroy(struct wl_resource *resource);
 static void dwl_ipc_manager_get_output(struct wl_client *client, struct wl_resource *resource, uint32_t id, struct wl_resource *output);
@@ -326,6 +327,7 @@ static void dwl_ipc_output_set_layout(struct wl_client *client, struct wl_resour
 static void dwl_ipc_output_set_tags(struct wl_client *client, struct wl_resource *resource, uint32_t tagmask, uint32_t toggle_tagset);
 static void dwl_ipc_output_release(struct wl_client *client, struct wl_resource *resource);
 static void focusclient(Client *c, int lift);
+static void updateFocus(const Arg *arg);
 static void focusmon(const Arg *arg);
 static void focusstack(const Arg *arg);
 static Client *focusedtop(Monitor *m);
@@ -1553,8 +1555,6 @@ void focusclient(Client *c, int lift) {
 		/* Don't change border color if there is an exclusive focus or we are
 		 * handling a drag operation */
 		if (!exclusive_focus && !seat->drag) {
-			client_set_border_color(c, focuscolor);
-
 			update_client_focus_decorations(c, 1, 0);
 		}
 	}
@@ -1599,6 +1599,8 @@ void focusclient(Client *c, int lift) {
 	/* Activate the new client */
 	client_activate_surface(client_surface(c), 1);
 
+	update_client_focus_decorations(c, 1, 0);
+
 	// Makes the client unminimized if it's minimized.
 	if (c->isminimized) {
 		minimize(c);
@@ -1606,6 +1608,13 @@ void focusclient(Client *c, int lift) {
 
 	if (c->foreign_toplevel)
 		wlr_foreign_toplevel_handle_v1_set_activated(c->foreign_toplevel, 1);
+}
+
+void updateStuff(const Arg *arg) {
+	Client *sel = focusedtop(selmon);
+	if (sel) {
+		update_client_focus_decorations(sel, 1, 0);
+	}
 }
 
 void
@@ -2511,8 +2520,7 @@ quit(const Arg *arg)
 	wl_display_terminate(dpy);
 }
 
-void
-rendermon(struct wl_listener *listener, void *data)
+void rendermon(struct wl_listener *listener, void *data)
 {
 	/* This function is called every time an output is ready to display a frame,
 	 * generally at the output's refresh rate (e.g. 60Hz). */
@@ -3612,8 +3620,7 @@ iter_xdg_scene_buffers_corner_radius(struct wlr_scene_buffer *buffer, int sx, in
 	}
 }
 
-void
-output_configure_scene(struct wlr_scene_node *node, Client *c)
+void output_configure_scene(struct wlr_scene_node *node, Client *c)
 {
 	Client *_c;
 	struct wlr_xdg_surface *xdg_surface;
@@ -3644,9 +3651,10 @@ output_configure_scene(struct wlr_scene_node *node, Client *c)
 			}
 
 			if (!wlr_subsurface_try_from_wlr_surface(xdg_surface->surface)) {
-				update_buffer_corner_radius(c, buffer);
+				wlr_scene_buffer_set_corner_radius(buffer, corner_radius, CORNER_LOCATION_ALL);
 			}
 		}
+
 	} else if (node->type == WLR_SCENE_NODE_TREE) {
 		struct wlr_scene_tree *tree = wl_container_of(node, tree, node);
 		wl_list_for_each(_node, &tree->children, link) {
@@ -3680,7 +3688,7 @@ void client_set_shadow_blur_sigma(Client *c, int blur_sigma)
 void update_client_corner_radius(Client *c)
 {
 	if (corner_radius && c->round_border) {
-		int radius = c->corner_radius + c->bw;
+		int radius = corner_radius + c->bw;
 		if ((corner_radius_only_floating && !c->isfloating) || c->isfullscreen) {
 			radius = 0;
 		}
@@ -3735,7 +3743,31 @@ void update_client_shadow_color(Client *c)
 void update_client_focus_decorations(Client *c, int focused, int urgent)
 {
 	if (corner_radius > 0 && c->round_border) {
-		wlr_scene_rect_set_color(c->round_border, urgent ? urgentcolor : (focused ? focuscolor : bordercolor));
+		c->round_border->node.data = c;
+		/* Lower the border below the XDG scene tree */
+		wlr_scene_node_place_above(&c->round_border->node, &c->scene_surface->node);
+
+		/* hide original border */
+		for (int i = 0; i < 4; i++) {
+			wlr_scene_rect_set_color(c->border[i], transparent);
+		}
+
+		struct wlr_box clip;
+
+		client_get_clip(c, &clip);
+	
+		if (corner_radius > 0 && c->round_border) {
+			wlr_scene_node_set_position(&c->round_border->node, 0, 0);
+			wlr_scene_rect_set_size(c->round_border, c->geom.width, c->geom.height);
+			wlr_scene_rect_set_clipped_region(c->round_border, (struct clipped_region) {
+				.corner_radius = c->corner_radius,
+				.corners = CORNER_LOCATION_ALL,
+				.area = { c->bw, c->bw, c->geom.width - c->bw * 2, c->geom.height - c->bw * 2 }
+			});
+		}
+
+		wlr_scene_rect_set_color(c->round_border, focuscolor);
+		wlr_scene_rect_set_corner_radius(c->round_border, corner_radius, CORNER_LOCATION_ALL);
 	}
 	if (shadow && c->shadow) {
 		client_set_shadow_blur_sigma(c, shadow_blur_sigma);

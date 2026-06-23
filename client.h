@@ -148,8 +148,8 @@ static inline void client_get_clip(Client *c, struct wlr_box *clip)
 	*clip = (struct wlr_box){
 		.x = c->bw,
 		.y = c->bw,
-		.width = c->geom.width - c->bw * 2,
-		.height = c->geom.height - c->bw * 2,
+		.width = c->surface.xdg->geometry.width - c->bw * 2,
+		.height = c->surface.xdg->geometry.height - c->bw * 2,
 	};
 	clip->x = c->geom.x;
 	clip->y = c->geom.y;
@@ -167,7 +167,7 @@ client_get_geometry(Client *c, struct wlr_box *geom)
 		return;
 	}
 #endif
-	*geom = c->geom;
+	*geom = c->surface.xdg->geometry;
 }
 
 static inline Client *

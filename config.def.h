@@ -21,15 +21,16 @@ static const float opacity_active = 1.0;
 //TODO Fix resize
 
 static const int shadow = 1; /* flag to enable shadow */
-static const int shadow_only_floating = 0; /* only apply shadow to floating windows */
+static const int shadow_only_floating = 1; /* only apply shadow to floating windows */
 static const float shadow_color[4] = COLOR(0x00000040);
 static const float shadow_color_focus[4] = COLOR(0xFF0000ff);
 static const int shadow_blur_sigma = 10;
 static const int shadow_blur_sigma_focus = 10;
 static const char *const shadow_ignore_list[] = { NULL }; /* list of app-id to ignore */
 
-static const int corner_radius = 10; /* 0 disables corner_radius */
-static const int corner_radius_inner = 10; /*` 0 disables corner_radius */
+static const int rounded_corners = 1;
+static const int corner_radius = 6; /* 0 disables corner_radius */
+static const int corner_radius_inner = 6; /*` 0 disables corner_radius */
 static const int corner_radius_only_floating = 0; /* only apply corner_radius and corner_radius_inner to floating windows */
 
 
@@ -179,6 +180,7 @@ static const Key keys[] = {
 	/* Note that Shift changes certain key codes: 2 -> at, etc. */
 	/* modifier                  key                  function          argument */
 	{ WLR_MODIFIER_ALT,          XKB_KEY_r,           spawn,            {.v = menu} },
+	{ MODKEY, 				     XKB_KEY_i, 	  updateStuff, 	    {0} },
 	{ MODKEY,                    XKB_KEY_t,           spawn,            {.v = terminal} },
   	{ MODKEY,                    XKB_KEY_f,           spawn,            {.v = browser} },
 	{ MODKEY, 					 XKB_KEY_e, 		  spawn, 			{.v = fileManager} },
