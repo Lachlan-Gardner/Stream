@@ -29,8 +29,8 @@ static const int shadow_blur_sigma_focus = 10;
 static const char *const shadow_ignore_list[] = { NULL }; /* list of app-id to ignore */
 
 static const int rounded_corners = 1;
-static const int corner_radius = 6; /* 0 disables corner_radius */
-static const int corner_radius_inner = 6; /*` 0 disables corner_radius */
+static const int corner_radius = 10; /* 0 disables corner_radius */
+static const int corner_radius_inner = 10; /*` 0 disables corner_radius */
 static const int corner_radius_only_floating = 0; /* only apply corner_radius and corner_radius_inner to floating windows */
 
 
@@ -180,7 +180,6 @@ static const Key keys[] = {
 	/* Note that Shift changes certain key codes: 2 -> at, etc. */
 	/* modifier                  key                  function          argument */
 	{ WLR_MODIFIER_ALT,          XKB_KEY_r,           spawn,            {.v = menu} },
-	{ MODKEY, 				     XKB_KEY_i, 	  updateStuff, 	    {0} },
 	{ MODKEY,                    XKB_KEY_t,           spawn,            {.v = terminal} },
   	{ MODKEY,                    XKB_KEY_f,           spawn,            {.v = browser} },
 	{ MODKEY, 					 XKB_KEY_e, 		  spawn, 			{.v = fileManager} },
