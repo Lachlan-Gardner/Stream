@@ -2090,6 +2090,7 @@ locksession(struct wl_listener *listener, void *data)
 }
 
 //TODO Comment this and it's use.
+//TODO Make this work for all apps, not just firefox.
 static void apply_corner_radius_recursive(struct wlr_scene_node *node, int radius) {
 	if (node->type == WLR_SCENE_NODE_BUFFER) {
 		struct wlr_scene_buffer *buf = wlr_scene_buffer_from_node(node);
@@ -2146,12 +2147,7 @@ void mapnotify(struct wl_listener *listener, void *data)
 #ifdef XWAYLAND
 	if (!client_is_x11(c)) {
 #endif
-	if (corner_radius > 0) {
-	struct wlr_scene_node *child;
-	wl_list_for_each(child, &c->scene_surface->children, link) {
-		apply_corner_radius_recursive(child, corner_radius);
-	}
-}	
+
 #ifdef XWAYLAND
 	}
 #endif
@@ -2189,6 +2185,14 @@ void mapnotify(struct wl_listener *listener, void *data)
 	} else {
 		applyrules(c);
 	}
+
+	if (corner_radius > 0) {
+		struct wlr_scene_node *child;
+		wl_list_for_each(child, &c->scene_surface->children, link) {
+			apply_corner_radius_recursive(child, corner_radius);
+		}
+	}	
+	
 	printstatus();
 
 unset_fullscreen:
