@@ -2617,7 +2617,7 @@ void resize(Client *c, struct wlr_box geo, int interact)
 	}
 
 	bbox = interact ? &sgeom : &c->mon->w;
-	
+
 	client_set_bounds(c, geo.width, geo.height);
 	c->geom = geo;
 	applybounds(c, bbox);
@@ -3761,8 +3761,12 @@ void factivatenotify(struct wl_listener *listener, void *data)
 	} else {
 		setmon(c, selmon, 0);
 	}
-	focusclient(c, 1);
-	arrange(c->mon);
+	if (focusedtop(selmon) != c){
+		focusclient(c, 1);
+		arrange(c->mon);
+	} else {
+		minimize(c);
+	}
 }
 
 void fclosenotify(struct wl_listener *listener, void *data)
