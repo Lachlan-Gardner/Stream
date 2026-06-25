@@ -36,6 +36,8 @@ Goals:
  - [x] Minimise.
  - [x] Maximise.
  - [x] Fullscreen.
+ - [x] Rounded corners via scenefx.
+ - [ ] Reposition.
  - [ ] Pywal integration (probably just border focus colours). 
  - [x] Screenshotting.
  - [ ] Idle and locking managers.
