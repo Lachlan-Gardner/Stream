@@ -29,8 +29,8 @@ static const int shadow_blur_sigma_focus = 10;
 static const char *const shadow_ignore_list[] = { NULL }; /* list of app-id to ignore */
 
 static const int rounded_corners = 1;
-static const int corner_radius = 10; /* 0 disables corner_radius */
-static const int corner_radius_inner = 10; /*` 0 disables corner_radius */
+static const int corner_radius = 15; /* 0 disables corner_radius */
+static const int corner_radius_inner = 15; /*` 0 disables corner_radius */
 static const int corner_radius_only_floating = 0; /* only apply corner_radius and corner_radius_inner to floating windows */
 
 

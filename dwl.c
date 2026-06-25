@@ -2192,7 +2192,7 @@ void mapnotify(struct wl_listener *listener, void *data)
 			apply_corner_radius_recursive(child, corner_radius);
 		}
 	}	
-	
+
 	printstatus();
 
 unset_fullscreen:
