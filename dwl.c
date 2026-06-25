@@ -2203,40 +2203,6 @@ unset_fullscreen:
 	}
 }
 
-// static void create_decoration(struct wl_listener *listener, void *data)
-// {
-//   struct wlr_xdg_toplevel_decoration_v1 *deco = data;
-//   Client *toplevel = calloc(1, sizeof(*toplevel));// deco->toplevel->base->data;
-//   toplevel->surface.xdg->toplevel = deco->toplevel->base->data;
-//   toplevel->decoration = deco;
-
-//   LISTEN(&deco->events.request_mode, &toplevel->set_decoration_mode, request_decoration_mode);
-//   LISTEN(&deco->events.destroy, &toplevel->destroy_decoration, destroy_decoration);
-// }
-
-// static void request_decoration_mode(struct wl_listener *listener, void *data) {
-//   Client *toplevel = wl_container_of(listener, toplevel, set_decoration_mode);
-
-//   if (toplevel->surface.xdg->toplevel->base->initialized) {
-//     // wlr_log(WLR_INFO, "Setting decoration mode");
-//     wlr_xdg_toplevel_decoration_v1_set_mode(toplevel->decoration,
-//         WLR_XDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE);
-//   }
-// }
-
-// static void destroy_decoration(struct wl_listener *listener, void *data) {
-//   struct quackwm_toplevel *toplevel = wl_container_of(listener, toplevel, destroy_decoration);
-
-//   wlr_log(WLR_INFO, "calling destroy decoration");
-
-//   wl_list_remove(&toplevel->destroy_decoration.link);
-//   wl_list_remove(&toplevel->set_decoration_mode.link);
-
-//   if (toplevel && toplevel->decoration)
-//     toplevel->decoration = NULL;
-// }
-
-
 void maximizenotify(struct wl_listener *listener, void *data)
 {
 	/* This event is raised when a client would like to maximize itself,
@@ -2254,8 +2220,7 @@ void maximizenotify(struct wl_listener *listener, void *data)
 		wlr_xdg_surface_schedule_configure(c->surface.xdg);
 }
 
-void
-monocle(Monitor *m)
+void monocle(Monitor *m)
 {
 	Client *c;
 	int n = 0;
