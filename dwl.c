@@ -2608,6 +2608,13 @@ void resize(Client *c, struct wlr_box geo, int interact)
 
 	if (!c->mon || !client_surface(c)->mapped)
 		return;
+	
+	if (c->ismaximized) {
+		return;
+	}
+	if (c->isfullscreen) {
+		return;
+	}
 
 	bbox = interact ? &sgeom : &c->mon->w;
 
@@ -2820,6 +2827,8 @@ void setmon(Client *c, Monitor *m, uint32_t newtags)
 		/* Make sure window actually overlaps with the monitor */
 		resize(c, c->geom, 0);
 		c->tags = newtags ? newtags : m->tagset[m->seltags]; /* assign tags of target monitor */
+		c->prev.x = (c->prev.width + 15 < m->m.width) ? 15 : 1;
+		c->prev.y = 15;
 		if (c->foreign_toplevel)
 			wlr_foreign_toplevel_handle_v1_output_enter(c->foreign_toplevel, m->wlr_output);
 		setfullscreen(c, c->isfullscreen); /* This will call arrange(c->mon) */
@@ -2838,8 +2847,7 @@ void setpsel(struct wl_listener *listener, void *data)
 	wlr_seat_set_primary_selection(seat, event->source, event->serial);
 }
 
-void
-setsel(struct wl_listener *listener, void *data)
+void setsel(struct wl_listener *listener, void *data)
 {
 	/* This event is raised by the seat when a client wants to set the selection,
 	 * usually when the user copies something. wlroots allows compositors to
@@ -2849,8 +2857,7 @@ setsel(struct wl_listener *listener, void *data)
 	wlr_seat_set_selection(seat, event->source, event->serial);
 }
 
-void
-setup(void)
+void setup(void)
 {
 	int drm_fd, i, sig[] = {SIGCHLD, SIGINT, SIGTERM, SIGPIPE};
 	struct sigaction sa = {.sa_flags = SA_RESTART, .sa_handler = handlesig};
@@ -3777,7 +3784,6 @@ void ffullscreennotify(struct wl_listener *listener, void *data) {
 /// @param c The client to maximise.
 void maximize(Client *c) {
 	if (!c->ismaximized) {
-		c->ismaximized = 1;
 		c->oldGeom = c->geom;
 
 		int width = c->mon->m.width;
@@ -3791,6 +3797,8 @@ void maximize(Client *c) {
 		};
 
 		resize(c, maxSize, 0);
+
+		c->ismaximized = 1;		
 	} else {
 		c->ismaximized = 0;
 
