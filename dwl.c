@@ -2617,10 +2617,7 @@ void resize(Client *c, struct wlr_box geo, int interact)
 	}
 
 	bbox = interact ? &sgeom : &c->mon->w;
-
-	geo.width = geo.width < 30 ? 30 : geo.width;
-	geo.height = geo.height < 30 ? 30 : geo.height;
-
+	
 	client_set_bounds(c, geo.width, geo.height);
 	c->geom = geo;
 	applybounds(c, bbox);
