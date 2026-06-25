@@ -2,7 +2,7 @@ PKG_CONFIG?=pkg-config
 WAYLAND_PROTOCOLS=$(shell $(PKG_CONFIG) --variable=pkgdatadir wayland-protocols)
 WAYLAND_SCANNER=$(shell $(PKG_CONFIG) --variable=wayland_scanner wayland-scanner)
 
-PKGS=wlroots-0.18 wayland-server wayland-protocols xkbcommon egl glesv2 gbm pixman-1
+PKGS=wlroots-0.19 wayland-server wayland-protocols xkbcommon egl glesv2 gbm pixman-1
 CFLAGS+= -g -Werror
 LD_FLAGS= -Wl,--as-needed -Wl,--no-undefined
 

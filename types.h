@@ -175,4 +175,56 @@ struct quackwm_keyboard {
   struct wl_listener destroy;
 };
 
+typedef union {
+	int i;
+	uint32_t ui;
+	float f;
+	const void *v;
+} Arg;
 
+typedef struct {
+	unsigned int mod;
+	unsigned int button;
+	void (*func)(const Arg *);
+	const Arg arg;
+} Button;
+
+typedef struct {
+	uint32_t mod;
+	xkb_keysym_t keysym;
+	void (*func)(const Arg *);
+	const Arg arg;
+} Key;
+
+typedef struct {
+	struct wlr_keyboard_group *wlr_group;
+
+	int nsyms;
+	const xkb_keysym_t *keysyms; /* invalid if nsyms == 0 */
+	uint32_t mods; /* invalid if nsyms == 0 */
+	struct wl_event_source *key_repeat_source;
+
+	struct wl_listener modifiers;
+	struct wl_listener key;
+	struct wl_listener destroy;
+} KeyboardGroup;
+
+static struct wlr_idle_notifier_v1 *idle_notifier;
+
+static int locked;
+
+/*
+ * Macros from dwl/dwl.c
+ */
+#define LISTEN(E, L, H)         wl_signal_add((E), ((L)->notify = (H), (L)))
+#define LISTEN_STATIC(E, H)     do { static struct wl_listener _l = {.notify = (H)}; wl_signal_add((E), &_l); } while (0)
+
+#define TAG_MASK  ((1u << TAG_COUNT) - 1)
+#define TAG_COUNT (uint32_t) 6
+
+#define MAX(A, B)               ((A) > (B) ? (A) : (B))
+#define MIN(A, B)               ((A) < (B) ? (A) : (B))
+#define CLEANMASK(mask)         (mask & ~WLR_MODIFIER_CAPS)
+#define VISIBLEON(C, M)         ((M) && (C)->mon == (M) && ((C)->tags & (M)->tagset[(M)->seltags]))
+#define LENGTH(X)               (sizeof X / sizeof X[0])
+#define END(A)                  ((A) + LENGTH(A))

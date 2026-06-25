@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <time.h>
 #include <unistd.h>
 
 #include <wayland-server-core.h>
@@ -44,6 +43,8 @@
 #include <wlr/types/wlr_xdg_activation_v1.h>
 #include <wlr/types/wlr_xdg_decoration_v1.h>
 #include <wlr/types/wlr_xdg_output_v1.h>
+#include <wlr/types/wlr_keyboard_group.h>
+#include <wlr/types/wlr_idle_notify_v1.h>
 #include <wlr/xwayland.h>
 #include <wlr/util/log.h>
 
@@ -54,18 +55,12 @@
 
 #include <xkbcommon/xkbcommon.h>
 
-#include <types.h>
-#include <config.h>
-#include <linux/time.h>
+#include "types.h"
+#include "config.h"
+// #include <linux/time.h>
 
-/*
- * Macros from dwl/dwl.c
- */
-#define LISTEN(E, L, H)         wl_signal_add((E), ((L)->notify = (H), (L)))
-#define LISTEN_STATIC(E, H)     do { static struct wl_listener _l = {.notify = (H)}; wl_signal_add((E), &_l); } while (0)
 
-#define TAG_MASK  ((1u << TAG_COUNT) - 1)
-#define TAG_COUNT (uint32_t) 6
+;enum { CurNormal, CurPressed, CurMove, CurResize }; /* cursor */
 
 // Defining which keys count as modifier keybinds.
 // If they're detected them they are checked before being passed to client.
@@ -219,24 +214,6 @@ static void close_toplevel(struct quackwm_toplevel *toplevel) {
   }
 }
 
-static void keyboard_handle_modifiers(
-    struct wl_listener *listener, void *data) {
-  /* This event is raised when a modifier key, such as shift or alt, is
-   * pressed. We simply communicate this to the client. */
-  struct quackwm_keyboard *keyboard =
-    wl_container_of(listener, keyboard, modifiers);
-  /*
-   * A seat can only have one keyboard, but this is a limitation of the
-   * Wayland protocol - not wlroots. We assign all connected keyboards to the
-   * same seat. You can swap out the underlying wlr_keyboard like this and
-   * wlr_seat handles this transparently.
-   */
-  wlr_seat_set_keyboard(keyboard->server->seat, keyboard->wlr_keyboard);
-  /* Send modifiers to the client. */
-  wlr_seat_keyboard_notify_modifiers(keyboard->server->seat,
-      &keyboard->wlr_keyboard->modifiers);
-}
-
 static void exec_shell_command(const char **args) {
   char *prefix = "which ";
   char *suffix = " > /dev/null 2>&1";
@@ -259,115 +236,99 @@ static void exec_shell_command(const char **args) {
   }
 }
 
-static bool handle_keybinding(int PRESSED_MODKEY, struct quackwm_server *server, xkb_keysym_t sym, uint32_t keycode, int shift_pressed) {
-  /*
-   * Here we handle compositor keybindings. This is when the compositor is
-   * processing keys, rather than passing them on to the client for its own
-   * processing.
-   *
-   * This function assumes MOD_KEY is held down.
-   */
-
-  if (PRESSED_MODKEY == MOD_KEY) {
-    switch (sym) {
-      case XKB_KEY_w:
-      struct wlr_surface *surface;
-      double sx, sy;
-      struct quackwm_toplevel *toplevel = desktop_toplevel_at(server,
-          server->cursor->x, server->cursor->y, &surface, &sx, &sy);
-      if (toplevel)
-        close_toplevel(toplevel);
-      break;
-    
-    // Opens the terminal.
-    case XKB_KEY_t:
-        const char terminal[] = {"kitty"};
-        if (fork() == 0) {
-          execl("/bin/sh", "/bin/sh", "-c", terminal, (void *)NULL);
-        }
-        break;
-    
-    default:
-      return false;
-    }
-  }
-  uint32_t key_codes[TAG_COUNT] = {10, 11, 12, 13, 14, 15};
-  // wlr_log(WLR_INFO, "[shift pressed] sym, keycode %d %d", sym, keycode);
-  
-  for (int i = 0; i < TAG_COUNT; i++) {
-    if (keycode == key_codes[i]) {
-      if (shift_pressed)
-        reset_toplevel_tag(i);
-      else
-        switch_to_tag(i);
-      return true;
-    }
-  }
-
-  switch (sym) {
-    case XKB_KEY_r:
-      const char *args[] = {"rofi", "-show", "drun", "-theme-str 'listview { require-input: true; }'", NULL};
-      exec_shell_command(args);
-      break;
-
-    case XKB_KEY_Escape:
-      wl_display_terminate(server->wl_display);
-      break;
-
-    case XKB_KEY_Tab:
-      // cycle to the next toplevel
-      if (wl_list_length(&server->toplevels) < 2) {
-        break;
-      }
-      struct quackwm_toplevel *next_toplevel =
-        wl_container_of(server->toplevels.prev, next_toplevel, link);
-
-      focus_toplevel(next_toplevel, next_toplevel->is_xwayland ?
-          next_toplevel->xwayland_surface->surface :
-          next_toplevel->xdg_toplevel->base->surface);
-
-      // focus_toplevel(next_toplevel, next_toplevel->xdg_toplevel->base->surface);
-      break;
-
-    default:
-      return false;
-  }
-  return true;
+//TODO Fix all these things to add keybinding to this one.
+int
+keybinding(uint32_t mods, xkb_keysym_t sym)
+{
+	/*
+	 * Here we handle compositor keybindings. This is when the compositor is
+	 * processing keys, rather than passing them on to the client for its own
+	 * processing.
+	 */
+	const Key *k;
+	for (k = keys; k < END(keys); k++) {
+		if (CLEANMASK(mods) == CLEANMASK(k->mod)
+				&& xkb_keysym_to_lower(sym) == xkb_keysym_to_lower(k->keysym)
+				&& k->func) {
+			k->func(&k->arg);
+			return 1;
+		}
+	}
+	return 0;
 }
 
-static void keyboard_handle_key(struct wl_listener *listener, void *data) {
-  // event raised when a key is pressed or released
-  struct quackwm_keyboard *keyboard =
-    wl_container_of(listener, keyboard, key);
-  struct quackwm_server *server = keyboard->server;
-  struct wlr_keyboard_key_event *event = data;
-  struct wlr_seat *seat = server->seat;
+void keyboard_handle_key(struct wl_listener *listener, void *data)
+{
+	int i;
+	/* This event is raised when a key is pressed or released. */
+	KeyboardGroup *group = wl_container_of(listener, group, key);
+	struct wlr_keyboard_key_event *event = data;
 
-  // translate libinput keycode -> xkbcommon
-  uint32_t keycode = event->keycode + 8;
+	/* Translate libinput keycode -> xkbcommon */
+	uint32_t keycode = event->keycode + 8;
+	/* Get a list of keysyms based on the keymap for this keyboard */
+	const xkb_keysym_t *syms;
+	int nsyms = xkb_state_key_get_syms(group->wlr_group->keyboard.xkb_state, keycode, &syms);
 
-  // get the sym based on the keymap for this keyboard
-  int sym = xkb_state_key_get_one_sym(
-      keyboard->wlr_keyboard->xkb_state, keycode); //, &syms);
+	int handled = 0;
+	uint32_t mods = wlr_keyboard_get_modifiers(&group->wlr_group->keyboard);
 
-  bool handled = false;
-  uint32_t modifiers = wlr_keyboard_get_modifiers(keyboard->wlr_keyboard);
-  if ((modifiers & MOD_KEY) && (event->state == WL_KEYBOARD_KEY_STATE_PRESSED)) {
-    // if MOD_KEY is held down and this button was _pressed_, we attempt to
-    // process it as a compositor keybinding
-    handled = handle_keybinding(MOD_KEY, server, sym, keycode, modifiers & WLR_MODIFIER_SHIFT);
-  } else if ((modifiers & OTHER_MOD_KEY) && (event->state == WL_KEYBOARD_KEY_STATE_PRESSED)) {
-    // if OTHER_MOD_KEY is held down and this button was _pressed_, we attempt to
-    // process it as a compositor keybinding
-    handled = handle_keybinding(OTHER_MOD_KEY, server, sym, keycode, modifiers & WLR_MODIFIER_SHIFT);
-  }
+	wlr_idle_notifier_v1_notify_activity(idle_notifier, server.seat);
 
-  if (!handled) {
-    // Otherwise, we pass it along to the client
-    wlr_seat_set_keyboard(seat, keyboard->wlr_keyboard);
-    wlr_seat_keyboard_notify_key(seat, event->time_msec,
-        event->keycode, event->state);
-  }
+	/* On _press_ if there is no active screen locker,
+	 * attempt to process a compositor keybinding. */
+	if (!locked && event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
+		for (i = 0; i < nsyms; i++)
+			handled = keybinding(mods, syms[i]) || handled;
+	}
+
+	if (handled && group->wlr_group->keyboard.repeat_info.delay > 0) {
+		group->mods = mods;
+		group->keysyms = syms;
+		group->nsyms = nsyms;
+		wl_event_source_timer_update(group->key_repeat_source,
+				group->wlr_group->keyboard.repeat_info.delay);
+	} else {
+		group->nsyms = 0;
+		wl_event_source_timer_update(group->key_repeat_source, 0);
+	}
+
+	if (handled)
+		return;
+
+	wlr_seat_set_keyboard(server.seat, &group->wlr_group->keyboard);
+	/* Pass unhandled keycodes along to the client. */
+	wlr_seat_keyboard_notify_key(server.seat, event->time_msec,
+			event->keycode, event->state);
+}
+
+void
+keyboard_handle_modifiers(struct wl_listener *listener, void *data)
+{
+	/* This event is raised when a modifier key, such as shift or alt, is
+	 * pressed. We simply communicate this to the client. */
+	KeyboardGroup *group = wl_container_of(listener, group, modifiers);
+
+	wlr_seat_set_keyboard(server.seat, &group->wlr_group->keyboard);
+	/* Send modifiers to the client. */
+	wlr_seat_keyboard_notify_modifiers(server.seat, &group->wlr_group->keyboard.modifiers);
+}
+
+int
+keyrepeat(void *data)
+{
+	KeyboardGroup *group = data;
+	int i;
+	if (!group->nsyms || group->wlr_group->keyboard.repeat_info.rate <= 0)
+		return 0;
+
+	wl_event_source_timer_update(group->key_repeat_source,
+			1000 / group->wlr_group->keyboard.repeat_info.rate);
+
+	for (i = 0; i < group->nsyms; i++)
+		keybinding(group->mods, group->keysyms[i]);
+
+	return 0;
 }
 
 static void keyboard_handle_destroy(struct wl_listener *listener, void *data) {
@@ -797,7 +758,7 @@ static void server_cursor_button(struct wl_listener *listener, void *data) {
         geo_box.width = toplevel->xwayland_surface->width;
         geo_box.height = toplevel->xwayland_surface->height;
       } else {
-        wlr_xdg_surface_get_geometry(toplevel->xdg_toplevel->base, &geo_box);
+        geo_box = toplevel->xdg_toplevel->base->current.geometry;
       }
 
       server->grabbed_toplevel = toplevel;
@@ -840,11 +801,11 @@ static void server_cursor_axis(struct wl_listener *listener, void *data) {
     wl_container_of(listener, server, cursor_axis);
 
   struct wlr_pointer_axis_event *event = data;
+	wlr_idle_notifier_v1_notify_activity(idle_notifier, server->seat);
+
   /* Notify the client with pointer focus of the axis event. */
 
-  wlr_seat_pointer_notify_axis(server->seat,
-      event->time_msec, event->orientation, event->delta,
-      event->delta_discrete, event->source, event->relative_direction);
+  wlr_seat_pointer_notify_axis(server->seat, event->time_msec, event->orientation, event->delta, event->delta_discrete, event->source, event->relative_direction);
 }
 
 static void server_cursor_frame(struct wl_listener *listener, void *data) {
@@ -1232,7 +1193,8 @@ static void xdg_toplevel_commit(struct wl_listener *listener, void *data) {
   }
 
   struct wlr_box geometry;
-  wlr_xdg_surface_get_geometry(toplevel->xdg_toplevel->base, &geometry);
+  
+  geometry = toplevel->xdg_toplevel->base->current.geometry;
 
   int blur_sigma = toplevel->shadow->blur_sigma;
   wlr_scene_shadow_set_size(toplevel->shadow,
