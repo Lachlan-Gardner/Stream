@@ -25,6 +25,16 @@ Build for testing using:
 
 This will copy config.def.h to config.h (which is what dwl.c actually includes) and then compile dwl.c to dwl. You then run dwl
 
+# Waybar
+   
+This repo comes with a basic waybar config, simply install waybar, run:  
+        
+     
+    ln -s ~/Stream/Waybar/* ~/.config/waybar
+         
+This will symlink the config files for waybar to the correct location. The folder must exist and there musn't be any files or directories by the same names though.  
+If you get an error about cava maybe being endless, just make cava.sh in the Scripts directory executable using chmod (`chmod +x /path/to/cava.sh`).
+
 Goals:
  - [x] Bring over keybinds.
  - [x] Brightness and volume controls.
