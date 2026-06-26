@@ -1,0 +1,50 @@
+{
+    "include": [
+        "/home/Lachlan/.config/waybar/module-main.jsonc",
+        "/home/Lachlan/.config/waybar/custom-modules.jsonc"
+    ],
+    
+    "layer": "top",
+    "position": "bottom",
+    "mod": "dock",
+    "exclusive": true,
+    "passthrough": false,
+    "gtk-layer-shell": true,
+    "reload_style_on_change": true,
+    "margin-top": 4,
+    "margin-left": 1,
+    "margin-right": 1,
+    "padding": 5,
+    "spacing": 8,
+    "height": 47,
+    "modules-left": [
+            "wlr/taskbar",
+            "cava"  
+    ],
+
+    "modules-center": [
+        "custom/cava"
+    ],
+
+    "modules-right": [
+        "tray",
+        "pulseaudio",
+        "battery", 
+        "backlight"
+    ],
+
+    "tray": {
+        "spacing": 5,
+        "show-passive-items": true
+    },
+
+    "wlr/taskbar": {
+        "on-click": "activate",
+        "on-click-right": "minimize",
+        "spacing": "10px",
+        "icon-size": 24,
+        "on-click-middle": "close",
+        "icon-theme": "Numix-Circle",
+        "tooltip-format": "{title}"
+    }
+}

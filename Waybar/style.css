@@ -1,0 +1,78 @@
+@import "/home/Lachlan/.cache/wal/colors-waybar.css";
+
+* {
+  border: none;
+  border-radius: 0px;
+  font-family: "JetBrainsMono Nerd Font", "MesloLGS Nerd Font", "Font Awesome";
+  font-weight: bold;
+  font-size: 18px;
+  min-height: 0px;
+  padding: 0px 2px 0px 2px;
+  color: @foreground;
+}
+
+window#waybar {
+  background: @foreground;
+  color: @foreground;
+  border: 1px solid;
+  border-color: @color3;
+  padding: 0px 0px 5px 0px;
+}
+
+#pulseaudio,
+#battery, 
+#backlight,
+#taskbar,
+#clock,
+#tray {
+  background: @background;
+  border: 1px solid;
+  border-color: @color8;
+  opacity: 0.9;
+  padding: 0px 10px 0px 10px;
+  margin: 3px 0px 3px 0px;
+  border-radius: 10px;
+}
+
+#pulseaudio,
+#battery, 
+#backlight {
+  margin-top: 8px;
+  margin-bottom: 8px;;
+}
+
+#taskbar {
+  border-bottom: 4px solid;
+  border-color: transparent;
+  padding-bottom: 3px;
+  padding-top: 5px;
+  
+}
+
+#taskbar.empty {
+  background: transparent;
+  border-color: transparent;
+  padding: 0px 10px 0px 10px;
+  margin: 3px 0px 3px 0px;
+  border-radius: 10px;
+}
+
+#taskbar button {
+  margin-right: 5px;
+}
+
+#taskbar button.active {
+  border-bottom: 4px solid;
+  border-color: @color12;
+}
+
+#taskbar button:hover {
+  border-bottom: 4px solid;
+  border-radius: 9px;
+}
+
+#custom-cava {
+  color: @background;
+  font-size: 40px;
+  padding-bottom: 2px;
+}

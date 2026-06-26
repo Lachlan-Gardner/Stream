@@ -1,0 +1,9 @@
+{
+    // waybar cava
+    // If you get an error like cava stopped unexpectedly, is it endless? Try making it executable using chmod.
+    "custom/cava": {
+        "exec": "/home/Lachlan/.config/waybar/Scripts/cava.sh",
+        "framerate": 60,
+        "width": 0
+    }
+}
