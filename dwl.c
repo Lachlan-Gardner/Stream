@@ -2760,8 +2760,6 @@ void setfullscreen(Client *c, int fullscreen)
 		return;
 	c->bw = fullscreen ? 0 : borderpx;
 	client_set_fullscreen(c, fullscreen);
-	wlr_scene_node_reparent(&c->scene->node, layers[c->isfullscreen
-			? LyrFS : c->isfloating ? LyrFloat : LyrTile]);
 
 	if (fullscreen) {
 		c->prev = c->geom;
@@ -2773,6 +2771,9 @@ void setfullscreen(Client *c, int fullscreen)
 	}
 
 	c->isfullscreen = fullscreen;
+	c->ismaximized = 0;
+	c->isminimized = 0;
+	wlr_scene_node_reparent(&c->scene->node, layers[(c->isfullscreen) ? LyrFS : (c->isfloating) ? LyrFloat : LyrTile]);
 
 	arrange(c->mon);
 	printstatus();
@@ -3785,6 +3786,10 @@ void ffullscreennotify(struct wl_listener *listener, void *data) {
 /// @brief Makes the client (window) fill the available space or return it to it's non maximised state.
 /// @param c The client to maximise.
 void maximize(Client *c) {
+	if(c->isfullscreen) {
+		setfullscreen(c, 0);
+	}
+
 	if (!c->ismaximized) {
 		c->oldGeom = c->geom;
 
