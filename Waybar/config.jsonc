@@ -19,14 +19,14 @@
     "height": 47,
     "modules-left": [
             "wlr/taskbar",
-            "cava"  
     ],
 
     "modules-center": [
-        "custom/cava"
+        "clock"
     ],
 
     "modules-right": [
+        "custom/cava",
         "tray",
         "pulseaudio",
         "battery", 
