@@ -41,7 +41,7 @@ Goals:
  - [ ] Pywal integration (probably just border focus colours). 
  - [x] Screenshotting.
  - [ ] Idle and locking managers.
- - [ ] Taskbar.
+ - [x] Taskbar.
  - [ ] Autostart.
  - [ ] Workspaces.
  - [ ] Psuedotiling. (Possibly a pipe dream)
