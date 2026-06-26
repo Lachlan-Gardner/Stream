@@ -2373,10 +2373,13 @@ void moveresize(const Arg *arg)
 {
 	if (cursor_mode != CurNormal && cursor_mode != CurPressed)
 		return;
-	//? What does this do?
+	
+	// Gets the node under the cursor.
 	xytonode(cursor->x, cursor->y, NULL, &grabc, NULL, NULL, NULL);
 	if (!grabc || client_is_unmanaged(grabc) || grabc->isfullscreen)
 		return;
+
+	Client *initialc = grabc;
 
 	/* Float the window and tell motionnotify to grab it */
 	setfloating(grabc, 1);
@@ -2407,6 +2410,10 @@ void moveresize(const Arg *arg)
 		wlr_cursor_set_xcursor(cursor, cursor_mgr, cursors[rzcorner]);
 		break;
 	}
+
+	// Makes sure the previous state is overwritten so that when the user presses maximize it actually remaximizes.
+	grabc->oldGeom = grabc->geom;
+	grabc->ismaximized = 0;
 }
 
 void outputmgrapply(struct wl_listener *listener, void *data)
@@ -2602,19 +2609,12 @@ requestmonstate(struct wl_listener *listener, void *data)
 }
 
 void resize(Client *c, struct wlr_box geo, int interact)
-{
+{	
 	struct wlr_box *bbox;
 	struct wlr_box clip;
 
 	if (!c->mon || !client_surface(c)->mapped)
 		return;
-	
-	if (c->ismaximized) {
-		return;
-	}
-	if (c->isfullscreen) {
-		return;
-	}
 
 	bbox = interact ? &sgeom : &c->mon->w;
 
@@ -2756,7 +2756,6 @@ void setfloating(Client *c, int floating)
 
 void setfullscreen(Client *c, int fullscreen)
 {
-	c->isfullscreen = fullscreen;
 	if (!c->mon || !client_surface(c)->mapped)
 		return;
 	c->bw = fullscreen ? 0 : borderpx;
@@ -2766,12 +2765,14 @@ void setfullscreen(Client *c, int fullscreen)
 
 	if (fullscreen) {
 		c->prev = c->geom;
-		resize(c, c->mon->m, 0);
+		resize(c, c->mon->m, 1);
 	} else {
 		/* restore previous size instead of arrange for floating windows since
 		 * client positions are set by the user and cannot be recalculated */
 		resize(c, c->prev, 0);
 	}
+
+	c->isfullscreen = fullscreen;
 
 	arrange(c->mon);
 	printstatus();
@@ -3788,7 +3789,7 @@ void maximize(Client *c) {
 		c->oldGeom = c->geom;
 
 		int width = c->mon->m.width;
-		int height = c->mon->m.height - 20;
+		int height = c->mon->m.height - 46;
 
 		struct wlr_box maxSize = {
 			.height = height,
@@ -3799,7 +3800,7 @@ void maximize(Client *c) {
 
 		resize(c, maxSize, 0);
 
-		c->ismaximized = 1;		
+		c->ismaximized = 1;
 	} else {
 		c->ismaximized = 0;
 
