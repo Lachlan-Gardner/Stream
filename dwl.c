@@ -1267,17 +1267,6 @@ void createnotify(struct wl_listener *listener, void *data)
 	c->opacity = opacity;
 	c->corner_radius = corner_radius;
 
-	if (c->scene_surface) {
-		struct wlr_scene_node *child;
-
-		wl_list_for_each(child, &c->scene_surface->children, link) {
-			if (wlr_scene_buffer_from_node(child)) {
-				wlr_scene_buffer_set_corner_radius(wlr_scene_buffer_from_node(child), c->corner_radius, CORNER_LOCATION_ALL);
-				break;
-			}
-		}
-	}
-
 	LISTEN(&toplevel->base->surface->events.commit, &c->commit, commitnotify);
 	LISTEN(&toplevel->base->surface->events.map, &c->map, mapnotify);
 	LISTEN(&toplevel->base->surface->events.unmap, &c->unmap, unmapnotify);
@@ -2754,6 +2743,9 @@ void setfloating(Client *c, int floating)
 	printstatus();
 }
 
+//TODO Autostart
+//TODO waybar tray currently has more space on the right than the left of the icons. Alos make the current active hover bottom border a different colour.
+
 void setfullscreen(Client *c, int fullscreen)
 {
 	if (!c->mon || !client_surface(c)->mapped)
@@ -2826,8 +2818,9 @@ void setmon(Client *c, Monitor *m, uint32_t newtags)
 		/* Make sure window actually overlaps with the monitor */
 		resize(c, c->geom, 0);
 		c->tags = newtags ? newtags : m->tagset[m->seltags]; /* assign tags of target monitor */
-		c->prev.x = (c->prev.width + 15 < m->m.width) ? 15 : 1;
-		c->prev.y = 15;
+		c->prev.x = (c->prev.width + 15 < m->m.width) ? 15 : 0;
+		c->prev.y = (c->prev.height + 65 < m->m.height) ? 15 : 0;
+
 		if (c->foreign_toplevel)
 			wlr_foreign_toplevel_handle_v1_output_enter(c->foreign_toplevel, m->wlr_output);
 		setfullscreen(c, c->isfullscreen); /* This will call arrange(c->mon) */
