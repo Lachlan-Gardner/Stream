@@ -49,11 +49,12 @@ Goals:
  - [x] Rounded corners via scenefx.
  - [x] Window size logic on window creation. (Sort of).
  - [x] Gamma control.
- - [ ] Reposition.
- - [ ] Pywal integration (probably just border focus colours). 
+ - [ ] Reposition.  
+ - ~~[ ] Pywal integration (probably just border focus colours).~~
  - [x] Screenshotting.
- - [ ] Idle and locking managers.
+ - [x] Idle and locking managers.
  - [x] Taskbar.
  - [x] Autostart.
  - [ ] Workspaces.
+ - [ ] A bar that works with the work spaces.
  - [ ] Psuedotiling. (Possibly a pipe dream)
