@@ -474,6 +474,9 @@ static struct wlr_virtual_pointer_manager_v1 *virtual_pointer_mgr;
 static struct wlr_cursor_shape_manager_v1 *cursor_shape_mgr;
 static struct wlr_output_power_manager_v1 *power_mgr;
 
+static struct wlr_gamma_control_manager_v1 *gamma_control_mgr;
+static struct wl_listener request_gamma;
+
 static struct wlr_pointer_constraints_v1 *pointer_constraints;
 static struct wlr_relative_pointer_manager_v1 *relative_pointer_mgr;
 static struct wlr_pointer_constraint_v1 *active_constraint;
@@ -2556,7 +2559,6 @@ void rendermon(struct wl_listener *listener, void *data)
 		if (c->resize && !c->isfloating && client_is_rendered_on_mon(c, m) && !client_is_stopped(c))
 			goto skip;
 	}
-
 	output_configure_scene(&m->scene_output->scene->tree.node, NULL);
 
 	wlr_scene_output_commit(m->scene_output, NULL);
@@ -2826,6 +2828,7 @@ void setmon(Client *c, Monitor *m, uint32_t newtags)
 		setfullscreen(c, c->isfullscreen); /* This will call arrange(c->mon) */
 		setfloating(c, c->isfloating);
 	}
+	
 	focusclient(focusedtop(selmon), 1);
 }
 
@@ -2937,6 +2940,8 @@ void setup(void)
 
 	power_mgr = wlr_output_power_manager_v1_create(dpy);
 	wl_signal_add(&power_mgr->events.set_mode, &output_power_mgr_set_mode);
+
+	wlr_scene_set_gamma_control_manager_v1(scene, wlr_gamma_control_manager_v1_create(dpy));
 
 	/* Creates an output layout, which is a wlroots utility for working with an
 	/* Initializes foreign toplevel management */
@@ -3787,6 +3792,7 @@ void maximize(Client *c) {
 		c->oldGeom = c->geom;
 
 		int width = c->mon->m.width;
+		// The 46 is the height of my bar, feel free to change to suit your own.
 		int height = c->mon->m.height - 46;
 
 		struct wlr_box maxSize = {
@@ -4004,7 +4010,8 @@ main(int argc, char *argv[])
 	if (!getenv("XDG_RUNTIME_DIR"))
 		die("XDG_RUNTIME_DIR must be set");
 	setup();
-	run(startup_cmd);
+	// This is to start your startup apps, you'll need to edit it and move it to the path variable in order to actually get it to work.
+	run("autostart.sh");
 	cleanup();
 	return EXIT_SUCCESS;
 

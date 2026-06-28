@@ -71,8 +71,15 @@ window#waybar {
   border-radius: 9px;
 }
 
+#taskbar button.active:hover {
+  border-bottom: 4px solid;
+  border-color: @color12;
+  border-bottom-left-radius: 2px;
+  border-bottom-right-radius: 2px;
+}
+
 #custom-cava {
-  color: @background;
+  color: @color9;
   font-size: 40px;
-  padding-bottom: 2px;
+  padding-bottom: 2;
 }

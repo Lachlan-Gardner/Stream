@@ -18,19 +18,19 @@
     "spacing": 8,
     "height": 47,
     "modules-left": [
-            "wlr/taskbar",
+            "wlr/taskbar"
     ],
 
     "modules-center": [
-        "clock"
+        "custom/cava"
     ],
 
     "modules-right": [
-        "custom/cava",
         "tray",
         "pulseaudio",
         "battery", 
-        "backlight"
+        "backlight",
+        "clock"
     ],
 
     "tray": {
