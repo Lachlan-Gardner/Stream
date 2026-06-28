@@ -1634,6 +1634,11 @@ void focusclient(Client *c, int lift) {
 		minimize(c);
 	}
 
+	//TODO Fix the workspace changing when closing all windows on the workspace.
+	if (c && c->workspace != currentWorkspace && lift) {
+		swapWorkspace(c->workspace);
+	}
+
 	if (c->foreign_toplevel)
 		wlr_foreign_toplevel_handle_v1_set_activated(c->foreign_toplevel, 1);
 }
