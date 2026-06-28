@@ -1,0 +1,4 @@
+timeout 270 'notify-send "Swayidle" "Locking screen in 30 seconds."'
+timeout 300 'pidof hyprlock || hyprlock'
+timeout 600 'systemctl sleep'
+before-sleep 'pidof hyprlock || hyprlock'
