@@ -511,6 +511,8 @@ static float transparent[4] = {0.1f, 0.1f, 0.1f, 0.0f};
 
 int currentWorkspace = 1;
 
+int workspacesCount[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+
 /* global event handlers */
 static struct wl_listener cursor_axis = {.notify = axisnotify};
 static struct wl_listener cursor_button = {.notify = buttonpress};
@@ -1281,6 +1283,7 @@ void createnotify(struct wl_listener *listener, void *data)
 	c->corner_radius = corner_radius;
 
 	c->workspace = currentWorkspace;
+	workspacesCount[currentWorkspace - 1]++;
 
 	LISTEN(&toplevel->base->surface->events.commit, &c->commit, commitnotify);
 	LISTEN(&toplevel->base->surface->events.map, &c->map, mapnotify);
@@ -1486,6 +1489,7 @@ void destroynotify(struct wl_listener *listener, void *data)
 	wl_list_remove(&c->set_title.link);
 	wl_list_remove(&c->fullscreen.link);
 
+	workspacesCount[c->workspace - 1]--;
 	
 #ifdef XWAYLAND
 	if (c->type != XDGShell) {
@@ -1633,6 +1637,8 @@ void focusclient(Client *c, int lift) {
 	if (c->isminimized) {
 		minimize(c);
 	}
+
+	
 
 	//TODO Fix the workspace changing when closing all windows on the workspace.
 	if (c && c->workspace != currentWorkspace && lift) {
@@ -2846,7 +2852,8 @@ void setmon(Client *c, Monitor *m, uint32_t newtags)
 		setfloating(c, c->isfloating);
 	}
 	
-	focusclient(focusedtop(selmon), 1);
+	// Make sure that it doesn't switch to the next workspace if the last window on that workspace is closed.
+	focusclient(focusedtop(selmon), 0);
 }
 
 void setpsel(struct wl_listener *listener, void *data)
