@@ -629,6 +629,10 @@ void arrange(Monitor *m)
 				wlr_scene_node_set_enabled(&c->scene->node, VISIBLEON(c, m));
 				client_set_suspended(c, !VISIBLEON(c, m));
 			}
+
+			if (c->workspace != currentWorkspace) {
+				workspaceMinimise(c, 0);
+			}
 		}
 	}
 
