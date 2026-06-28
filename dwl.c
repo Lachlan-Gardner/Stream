@@ -185,6 +185,7 @@ typedef struct {
 	int corner_radius;
 	struct wlr_scene_shadow *shadow;
 	int has_shadow_enabled;
+	int workspace;
 } Client;
 
 typedef struct {
@@ -440,6 +441,9 @@ static void maximize(Client *c);
 static void minimize(Client *c);
 static void maximizeKeybind(const Arg *arg);
 static void minimizeKeybind(const Arg *arg);
+static void workspaceMinimise(Client *c, int direction);
+static void swapWorkspace(int workspace);
+static void swapWorkspaceBind(const Arg *arg);
 
 /* variables */
 static pid_t child_pid = -1;
@@ -504,6 +508,8 @@ static struct wl_list mons;
 static Monitor *selmon;
 
 static float transparent[4] = {0.1f, 0.1f, 0.1f, 0.0f};
+
+int currentWorkspace = 1;
 
 /* global event handlers */
 static struct wl_listener cursor_axis = {.notify = axisnotify};
@@ -1269,6 +1275,8 @@ void createnotify(struct wl_listener *listener, void *data)
 
 	c->opacity = opacity;
 	c->corner_radius = corner_radius;
+
+	c->workspace = currentWorkspace;
 
 	LISTEN(&toplevel->base->surface->events.commit, &c->commit, commitnotify);
 	LISTEN(&toplevel->base->surface->events.map, &c->map, mapnotify);
@@ -3816,7 +3824,6 @@ void maximize(Client *c) {
 /// @param c The client to minimize.
 /// @param minimized The current minimized state.
 void minimize(Client *c) {
-	//TODO Make alt tab unminimize client, could use activate?
 	c->isminimized = (c->isminimized) ? 0 : 1;
 
 	// Disables/enables the output so that it isn't interactable and doesn't update.
@@ -3824,8 +3831,10 @@ void minimize(Client *c) {
 	wlr_scene_node_set_enabled(&c->scene->node, !c->isminimized);
 	client_set_suspended(c, c->isminimized);
 
-	// Makes it so the minimized node is below other nodes, like the visible ones.
-	wlr_scene_node_lower_to_bottom(&c->scene->node);
+	if (c->isminimized) {
+		// Makes it so the minimized node is below other nodes, like the visible ones.
+		wlr_scene_node_lower_to_bottom(&c->scene->node);
+	}
 
 	// Focuses the new top window.
 	focusclient(focusedtop(c->mon), 1);
@@ -3859,6 +3868,39 @@ void fmaximizenotify(struct wl_listener *listener, void *data) {
 	struct wlr_foreign_toplevel_handle_v1_maximized_event *event = data;
 
 	maximize(c);
+}
+
+void workspaceMinimise(Client *c, int direction) {
+	wlr_scene_node_set_enabled(&c->scene->node, direction);
+	client_set_suspended(c, !direction);
+
+	if (!direction)
+	{
+		// Makes it so the minimized node is below other nodes, like the visible ones.
+		wlr_scene_node_lower_to_bottom(&c->scene->node);
+	}
+}
+
+void swapWorkspace(int workspace) {
+	if (workspace == currentWorkspace) {
+		return;
+	}
+	
+	Client *c;
+
+	wl_list_for_each(c, &clients, link) {
+		if (c->workspace == workspace) {
+			workspaceMinimise(c, 1);
+		} else {
+			workspaceMinimise(c, 0);
+		}
+	}
+
+	currentWorkspace = workspace;
+}
+
+void swapWorkspaceBind(const Arg *arg) {
+	swapWorkspace(arg->i);
 }
 
 void fminimizenotify(struct wl_listener *listener, void *data) {
