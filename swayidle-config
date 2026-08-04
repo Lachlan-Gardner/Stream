@@ -1,4 +1,4 @@
 timeout 270 'notify-send "Swayidle" "Locking screen in 30 seconds."'
-timeout 300 'pidof hyprlock || hyprlock'
+timeout 300 'wlr-randr --output eDP-1 --on && pidof hyprlock || hyprlock'
 timeout 600 'systemctl sleep'
-before-sleep 'pidof hyprlock || hyprlock'
+before-sleep 'wlr-randr --output eDP-1 --on && pidof hyprlock || hyprlock'
